@@ -72,6 +72,46 @@ namespace HaremLife
 				anims.Add("", anim);
 			}
 
+			// save messages
+			JSONArray mlist = new JSONArray();
+			foreach(var mm in myMessages)
+			{
+				Message message = mm.Value;
+
+				JSONClass m = new JSONClass();
+
+				m["Name"] = message.myName;
+				m["MessageString"] = message.myMessageString;
+
+				JSONArray srcstlist = new JSONArray();
+				foreach(var srcst in message.mySourceStates) {
+					JSONClass src = new JSONClass();
+					src["AnimationName"] = srcst.Value.myLayer.myAnimation.myName;
+					src["LayerName"] = srcst.Value.myLayer.myName;
+					src["StateName"] = srcst.Value.myName;
+					srcstlist.Add(src);
+				}
+				m["SourceStates"] = srcstlist;
+				m["TargetState"] = message.myTargetState.myName;
+				m["TargetLayer"] = message.myTargetState.myLayer.myName;
+				m["TargetAnimation"] = message.myTargetState.myAnimation().myName;
+
+				m["Duration"].AsFloat = message.myDuration;
+				m["DurationNoise"].AsFloat = message.myDurationNoise;
+				m["EaseInDuration"].AsFloat = message.myEaseInDuration;
+				m["EaseOutDuration"].AsFloat = message.myEaseOutDuration;
+				m["Probability"].AsFloat = message.myProbability;
+
+				JSONClass synct = new JSONClass();
+				foreach (var syncl in message.mySyncTargets) {
+					synct[syncl.Key.myName] = syncl.Value.myName;
+				}
+				m["SyncTargets"] = synct;
+
+				mlist.Add(m);
+			}
+
+			jc["Messages"] = mlist;
 			jc["Animations"] = anims;
 
 			return jc;
@@ -138,7 +178,6 @@ namespace HaremLife
 						continue;
 
 					LoadTransitions(layer, layerObj);
-					LoadMessages(layer, layerObj);
 				}
 			}
 
@@ -165,6 +204,7 @@ namespace HaremLife
 				myMainState.valNoCallback = myCurrentState.myName;
 				myMainState.setCallbackFunction(myCurrentState.myName);
 			}
+			LoadMessages(jc);
 		}
 
 		private JSONClass SaveLayer(Layer layerToSave)
@@ -313,51 +353,6 @@ namespace HaremLife
 				slist.Add("", st);
 			}
 			layer["States"] = slist;
-
-			// save messages
-			JSONArray mlist = new JSONArray();
-			foreach(var mm in layerToSave.myMessages)
-			{
-				Message message = mm.Value;
-
-				JSONClass m = new JSONClass();
-
-				m["Name"] = message.myName;
-				m["MessageString"] = message.myMessageString;
-
-				JSONArray srcstlist = new JSONArray();
-				foreach(var srcst in message.mySourceStates) {
-					JSONClass src = new JSONClass();
-					src["Name"] = srcst.Value.myName;
-					srcstlist.Add(src);
-				}
-				m["SourceStates"] = srcstlist;
-				m["TargetState"] = message.myTargetState.myName;
-
-				string firstSrcState = message.mySourceStates.Keys.ToList()[0];
-				if(message.myTargetState.myLayer == message.mySourceStates[firstSrcState].myLayer)
-					m["TargetLayer"] = "[Self]";
-				else
-					m["TargetLayer"] = message.myTargetState.myLayer.myName;
-				if(message.myTargetState.myAnimation() == message.mySourceStates[firstSrcState].myAnimation())
-					m["TargetAnimation"] = "[Self]";
-				else
-					m["TargetAnimation"] = message.myTargetState.myAnimation().myName;
-				m["Duration"].AsFloat = message.myDuration;
-				m["DurationNoise"].AsFloat = message.myDurationNoise;
-				m["EaseInDuration"].AsFloat = message.myEaseInDuration;
-				m["EaseOutDuration"].AsFloat = message.myEaseOutDuration;
-				m["Probability"].AsFloat = message.myProbability;
-
-				JSONClass synct = new JSONClass();
-				foreach (var syncl in message.mySyncTargets) {
-					synct[syncl.Key.myName] = syncl.Value.myName;
-				}
-				m["SyncTargets"] = synct;
-
-				mlist.Add(m);
-			}
-			layer["Messages"] = mlist;
 
 			jc["Layer"] = layer;
 
@@ -615,24 +610,20 @@ namespace HaremLife
 			}
 		}
 
-		private void LoadMessages(Layer layer, JSONClass layerObj)
+		private void LoadMessages(JSONClass jc)
 		{
-			JSONArray mlist = layerObj["Messages"].AsArray;
+			JSONArray mlist = jc["Messages"].AsArray;
 
 			for (int i=0; i<mlist.Count; ++i)
 			{
 				JSONClass mclass = mlist[i].AsObject;
 
 				Animation targetAnimation;
-				if(String.Equals(mclass["TargetAnimation"], "[Self]"))
-					targetAnimation = layer.myAnimation;
-				else if(!myAnimations.TryGetValue(mclass["TargetAnimation"], out targetAnimation))
+				if(!myAnimations.TryGetValue(mclass["TargetAnimation"], out targetAnimation))
 					continue;
 
 				Layer targetLayer;
-				if(String.Equals(mclass["TargetLayer"], "[Self]"))
-					targetLayer = layer;
-				else if(!targetAnimation.myLayers.TryGetValue(mclass["TargetLayer"], out targetLayer))
+				if(!targetAnimation.myLayers.TryGetValue(mclass["TargetLayer"], out targetLayer))
 					continue;
 
 				State target;
@@ -651,8 +642,11 @@ namespace HaremLife
 				for (int j=0; j<srcstlist.Count; ++j)
 				{
 					JSONClass src = srcstlist[j].AsObject;
-					State srcst = layer.myStates[src["Name"]];
-					message.mySourceStates[srcst.myName] = srcst;
+					Animation srcan = myAnimations[src["AnimationName"]];
+					Layer srcly = srcan.myLayers[src["LayerName"]];
+					State srcst = srcly.myStates[src["StateName"]];
+					string qualStateName = $"{srcan.myName}.{srcly.myName}.{srcst.myName}";
+					message.mySourceStates[qualStateName] = srcst;
 				}
 
 				message.myTargetState = target;
@@ -668,7 +662,7 @@ namespace HaremLife
 					message.mySyncTargets[syncLayer] = syncState;
 				}
 
-				layer.myMessages[message.myName] = message;
+				myMessages[message.myName] = message;
 			}
 		}
     }
