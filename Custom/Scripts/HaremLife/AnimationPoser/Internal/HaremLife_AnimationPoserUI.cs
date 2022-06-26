@@ -40,6 +40,8 @@ namespace HaremLife
 		private JSONStorableStringChooser myMessageList;
 		private JSONStorableStringChooser myTargetAnimationList;
 		private JSONStorableStringChooser myTargetLayerList;
+		private JSONStorableStringChooser mySourceAnimationList;
+		private JSONStorableStringChooser mySourceLayerList;
 		private JSONStorableStringChooser mySourceStateList;
 		private JSONStorableStringChooser myTargetStateList;
 		private JSONStorableStringChooser mySyncRoleList;
@@ -1621,7 +1623,7 @@ namespace HaremLife
 			CreateMenuInfo("Use this to define special transitions that only take place when a given message is received.", 100, false);
 
 			List<string> messages = new List<string>();
-			foreach (var m in myCurrentLayer.myMessages)
+			foreach (var m in myMessages)
 			{
 				Message message = m.Value;
 				messages.Add(message.myName);
@@ -1645,7 +1647,7 @@ namespace HaremLife
 			CreateMenuButton("Remove Message", UIRemoveMessage, false);
 
 			Message selectedMessage;
-			myCurrentLayer.myMessages.TryGetValue(selectedMessageName, out selectedMessage);
+			myMessages.TryGetValue(selectedMessageName, out selectedMessage);
 
 			if(selectedMessage == null) {
 				return;
@@ -1653,9 +1655,9 @@ namespace HaremLife
 
 			JSONStorableString messageName = new JSONStorableString("Message Name",
 				selectedMessage.myName, (String newName) => {
-					myCurrentLayer.myMessages.Remove(selectedMessage.myName);
+					myMessages.Remove(selectedMessage.myName);
 					selectedMessage.myName = newName;
-					myCurrentLayer.myMessages[newName] = selectedMessage;
+					myMessages[newName] = selectedMessage;
 					UIRefreshMenu();
 				}
 			);
@@ -1669,6 +1671,30 @@ namespace HaremLife
 
 			CreateMenuTextInput("Name", messageName, false);
 			CreateMenuTextInput("String", messageString, false);
+
+			List<string> availableSourceAnimations = new List<string>();
+			foreach (var a in myAnimations)
+			{
+				Animation source = a.Value;
+				availableSourceAnimations.Add(source.myName);
+			}
+			availableSourceAnimations.Sort();
+
+			string selectedSourceAnimation;
+			if (availableSourceAnimations.Count == 0)
+				selectedSourceAnimation= "";
+			else if (mySourceAnimationList == null || !availableSourceAnimations.Contains(mySourceAnimationList.val))
+				selectedSourceAnimation = myCurrentAnimation.myName;
+			else
+				selectedSourceAnimation = mySourceAnimationList.val;
+
+			mySourceAnimationList = new JSONStorableStringChooser("Source Animation", availableSourceAnimations, selectedSourceAnimation, "Source Animation");
+			mySourceAnimationList.setCallbackFunction += (string v) => UIRefreshMenu();
+
+			Animation sourceAnimation;
+			if(!myAnimations.TryGetValue(mySourceAnimationList.val, out sourceAnimation)){
+				return;
+			};
 
 			List<string> availableAnimations = new List<string>();
 			if(selectedMessage.myTargetState != null) {
@@ -1700,9 +1726,36 @@ namespace HaremLife
 				return;
 			};
 
+			Layer sourceLayer;
+			List<string> availableSourceLayers = new List<string>();
+			if (selectedMessage.myTargetState == null || sourceAnimation != selectedMessage.myTargetState.myLayer.myAnimation){
+				foreach (var l in sourceAnimation.myLayers)
+				{
+					Layer source = l.Value;
+					availableSourceLayers.Add(source.myName);
+				}
+				availableSourceLayers.Sort();
+
+				string selectedSourceLayer;
+				if (availableSourceLayers.Count == 0)
+					selectedSourceLayer = "";
+				else if (mySourceLayerList == null || !availableSourceLayers.Contains(mySourceLayerList.val))
+					selectedSourceLayer = myCurrentLayer.myName;
+				else
+					selectedSourceLayer = mySourceLayerList.val;
+
+				mySourceLayerList = new JSONStorableStringChooser("Source Layer", availableSourceLayers, selectedSourceLayer, "Source Layer");
+				mySourceLayerList.setCallbackFunction += (string v) => UIRefreshMenu();
+
+				if(!sourceAnimation.myLayers.TryGetValue(mySourceLayerList.val, out sourceLayer))
+					return;
+			} else {
+				sourceLayer = selectedMessage.myTargetState.myLayer;
+			}
+
 			Layer targetLayer;
 			List<string> availableLayers = new List<string>();
-			if(targetAnimation != myCurrentAnimation) {
+			if(targetAnimation != sourceAnimation) {
 				if(selectedMessage.myTargetState != null) {
 					availableLayers.Add(selectedMessage.myTargetState.myLayer.myName);
 				} else {
@@ -1730,15 +1783,15 @@ namespace HaremLife
 				if(!targetAnimation.myLayers.TryGetValue(myTargetLayerList.val, out targetLayer))
 					return;
 			} else
-				targetLayer = myCurrentLayer;
+				targetLayer = sourceLayer;
 
 			List<string> availableSourceStates = new List<string>();
-			foreach (var s in myCurrentLayer.myStates)
+			foreach (var s in sourceLayer.myStates)
 			{
 				State source = s.Value;
 				bool isAvailable = true;
 				Dictionary<string, Message> equalMessages = new Dictionary<string, Message>();
-				foreach(var m in myCurrentLayer.myMessages) {
+				foreach(var m in myMessages) {
 					if(m.Value.myName == selectedMessage.myName)
 						continue;
 
@@ -1784,10 +1837,11 @@ namespace HaremLife
 			foreach (var s in targetLayer.myStates)
 			{
 				State target = s.Value;
-				if (selectedMessage != null && 
-					targetLayer == myCurrentLayer &&
-					selectedMessage.mySourceStates.Keys.ToList().Contains(target.myName))
-					continue;
+				if (selectedMessage != null) {
+					string qualStateName = $"{target.myLayer.myAnimation.myName}.{target.myLayer.myName}.{target.myName}";
+					if (selectedMessage.mySourceStates.Keys.ToList().Contains(qualStateName))
+						continue;
+				}
 
 				availableTargetStates.Add(target.myName);
 			}
@@ -1804,20 +1858,32 @@ namespace HaremLife
 			myTargetStateList = new JSONStorableStringChooser("Target State", availableTargetStates, selectedTargetState, "Target State");
 			myTargetStateList.setCallbackFunction += (string v) => UIRefreshMenu();
 
+			if (availableSourceAnimations.Count > 0)
+			{
+				CreateMenuPopup(mySourceAnimationList, false);
+			}
+			if (availableSourceLayers.Count > 0)
+			{
+				CreateMenuPopup(mySourceLayerList, false);
+			}
+
 			if (availableSourceStates.Count > 0)
 			{
 				CreateMenuPopup(mySourceStateList, false);
 				CreateMenuButton("Add Source State", () => {
-					State s = myCurrentLayer.myStates[mySourceStateList.val];
-					selectedMessage.mySourceStates[s.myName] = s;
+					Animation a = myAnimations[mySourceAnimationList.val];
+					Layer l = a.myLayers[mySourceLayerList.val];
+					State s = l.myStates[mySourceStateList.val];
+					string qualStateName = $"{a.myName}.{l.myName}.{s.myName}";
+					selectedMessage.mySourceStates[qualStateName] = s;
 					UIRefreshMenu();
 				}, false);
 			}
 			foreach(var s in selectedMessage.mySourceStates) {
 				CreateMenuLabelXButton(
-					s.Value.myName,
+					s.Key,
 					() => {
-						selectedMessage.mySourceStates.Remove(s.Value.myName);
+						selectedMessage.mySourceStates.Remove(s.Key);
 						UIRefreshMenu();
 					}, false
 				);
@@ -1842,7 +1908,7 @@ namespace HaremLife
 				}
 				else {
 					CreateMenuLabelXButton(
-						selectedMessage.myTargetState.myName,
+						$"{selectedMessage.myTargetState.myLayer.myAnimation.myName}.{selectedMessage.myTargetState.myLayer.myName}.{selectedMessage.myTargetState.myName}",
 						() => {
 							selectedMessage.myTargetState = null;
 							UIRefreshMenu();
@@ -1928,7 +1994,7 @@ namespace HaremLife
 				myCurrentAnimation.myLayers[layer.myName] = layer;
 				layer.myAnimation = myCurrentAnimation;
 				LoadTransitions(layer, layerObj);
-				LoadMessages(layer, layerObj);
+				// LoadMessages(layer, layerObj);
 			}
 
 			if (myCurrentState != null)
@@ -2240,16 +2306,16 @@ namespace HaremLife
 			if (name == null)
 				return;
 
-			myCurrentLayer.myMessages[name] = new Message(name);
+			myMessages[name] = new Message(name);
 			myMessageList.val = name;
 			UIRefreshMenu();
 		}
 
 		private void UIRemoveMessage()
 		{
-			myCurrentLayer.myMessages.Remove(myMessageList.val);
+			myMessages.Remove(myMessageList.val);
 
-			List<string> messages = myCurrentLayer.myMessages.Keys.ToList();
+			List<string> messages = myMessages.Keys.ToList();
 			messages.Sort();
 			if(messages.Count > 0) {
 				myMessageList.val = messages[0];
@@ -2302,7 +2368,7 @@ namespace HaremLife
 			for (int i=1; i<1000; ++i)
 			{
 				string name = "Message#" + i;
-				if (!myCurrentLayer.myMessages.ContainsKey(name))
+				if (!myMessages.ContainsKey(name))
 					return name;
 			}
 			SuperController.LogError("AnimationPoser: Too many messages!");
