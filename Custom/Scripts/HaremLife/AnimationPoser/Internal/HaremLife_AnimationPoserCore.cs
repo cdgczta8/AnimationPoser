@@ -38,6 +38,7 @@ namespace HaremLife
 		private const float DEFAULT_ANCHOR_DAMPING_TIME = 0.2f;
 
 		private Dictionary<string, Animation> myAnimations = new Dictionary<string, Animation>();
+		private Dictionary<string, Message> myMessages = new Dictionary<string, Message>();
 		private static Animation myCurrentAnimation;
 		private static Layer myCurrentLayer;
 		private static State myCurrentState;
@@ -109,16 +110,13 @@ namespace HaremLife
 
 		public void ReceiveMessage(String messageString) {
 			mySendMessage.valNoCallback = "";
-			foreach(var l in myCurrentAnimation.myLayers) {
-				Layer layer = l.Value;
-				foreach(var m in layer.myMessages) {
-					Message message = m.Value;
-					if(message.myMessageString == messageString) {
-						State currentState = layer.myCurrentState;
-						if(message.mySourceStates.Values.ToList().Contains(currentState)) {
-							Transition transition = new Transition(currentState, message);
-							layer.SetBlendTransition(message.myTargetState);
-						}
+			foreach (var m in myMessages) {
+				Message message = m.Value;
+				if(message.myMessageString == messageString) {
+					State currentState = myCurrentLayer.myCurrentState;
+					if(message.mySourceStates.Values.ToList().Contains(currentState)) {
+						Transition transition = new Transition(currentState, message);
+						myCurrentLayer.SetBlendTransition(message.myTargetState);
 					}
 				}
 			}
@@ -276,7 +274,6 @@ namespace HaremLife
 			public string myName;
 			public Animation myAnimation;
 			public Dictionary<string, State> myStates = new Dictionary<string, State>();
-			public Dictionary<string, Message> myMessages = new Dictionary<string, Message>();
 			public State myCurrentState;
 			public List<ControlCapture> myControlCaptures = new List<ControlCapture>();
 			public List<MorphCapture> myMorphCaptures = new List<MorphCapture>();
