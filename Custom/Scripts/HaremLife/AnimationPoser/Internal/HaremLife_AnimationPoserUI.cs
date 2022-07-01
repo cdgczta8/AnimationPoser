@@ -4,6 +4,7 @@ using UnityEngine.Events;
 using System;
 using System.Linq;
 using System.Text;
+using System.Collections;
 using System.Collections.Generic;
 using MVR.FileManagementSecure;
 using SimpleJSON;
@@ -252,6 +253,19 @@ namespace HaremLife
 			// switch to the desired tab
 			UISelectMenu(tabIdx);
 		}
+		
+		private RectTransform InitBasicRectTransformPrefab(string prefabName, Transform initTransform, Transform instTransform, float[] coordsArray, bool initialCast = true)
+		{
+			// RectTransform myTransform = new RectTransform();
+			RectTransform myTransform = Instantiate(initTransform as RectTransform, instTransform);
+			myTransform.name = prefabName;
+			myTransform.anchorMax = new Vector2(coordsArray[0], coordsArray[1]);
+			myTransform.anchorMin = new Vector2(coordsArray[2], coordsArray[3]);
+			myTransform.offsetMax = new Vector2(coordsArray[4], coordsArray[5]);
+			myTransform.offsetMin = new Vector2(coordsArray[6], coordsArray[7]);
+
+			return myTransform;
+		}
 
 		private void InitPrefabs()
 		{
@@ -270,97 +284,62 @@ namespace HaremLife
 				le.preferredHeight = 50;
 				le.preferredWidth = 500;
 
-				RectTransform backgroundTransform = manager.configurableScrollablePopupPrefab.transform.Find("Background") as RectTransform;
-				backgroundTransform = Instantiate(backgroundTransform, myLabelWith2BXButtonPrefab.transform);
-				backgroundTransform.name = "Background";
-				backgroundTransform.anchorMax = new Vector2(1, 1);
-				backgroundTransform.anchorMin = new Vector2(0, 0);
-				backgroundTransform.offsetMax = new Vector2(0, 0);
-				backgroundTransform.offsetMin = new Vector2(0, -10);
-
-				RectTransform xButtonTransform = manager.configurableScrollablePopupPrefab.transform.Find("Button") as RectTransform;
-				xButtonTransform = Instantiate(xButtonTransform, myLabelWith2BXButtonPrefab.transform);
-				xButtonTransform.name = "ButtonX";
-				xButtonTransform.anchorMax = new Vector2(1, 1);
-				xButtonTransform.anchorMin = new Vector2(1, 0);
-				xButtonTransform.offsetMax = new Vector2(0, 0);
-				xButtonTransform.offsetMin = new Vector2(-60, -10);
+				RectTransform backgroundTransform = InitBasicRectTransformPrefab(
+					"Background", manager.configurableScrollablePopupPrefab.transform.Find("Background"), myLabelWith2BXButtonPrefab.transform, new float[] {1, 1, 0, 0, 0, 0, 0, -10}
+				);
+				RectTransform xButtonTransform = InitBasicRectTransformPrefab(
+					"ButtonX", manager.configurableScrollablePopupPrefab.transform.Find("Button"), myLabelWith2BXButtonPrefab.transform, new float[] {1, 1, 1, 0, 0, 0, -60, -10}
+				);
 				Button buttonX = xButtonTransform.GetComponent<Button>();
 				Text xButtonText = xButtonTransform.Find("Text").GetComponent<Text>();
 				xButtonText.text = "X";
 				Image xButtonImage = xButtonTransform.GetComponent<Image>();
 
-				RectTransform labelTransform = xButtonText.rectTransform;
-				labelTransform = Instantiate(labelTransform, myLabelWith2BXButtonPrefab.transform);
-				labelTransform.name = "Text";
-				labelTransform.anchorMax = new Vector2(1, 1);
-				labelTransform.anchorMin = new Vector2(0, 0);
-				labelTransform.offsetMax = new Vector2(-65, 0);
-				labelTransform.offsetMin = new Vector2(100, -10);
+				RectTransform labelTransform = InitBasicRectTransformPrefab(
+					"Text", xButtonText.rectTransform, myLabelWith2BXButtonPrefab.transform, new float[] {1, 1, 0, 0, -65, 0, 100, -10}
+				);
 				Text labelText = labelTransform.GetComponent<Text>();
 				labelText.verticalOverflow = VerticalWrapMode.Overflow;
 
-				RectTransform toggleBG1Transform = manager.configurableTogglePrefab.transform.Find("Panel") as RectTransform;
-				toggleBG1Transform = Instantiate(toggleBG1Transform, myLabelWith2BXButtonPrefab.transform);
-				toggleBG1Transform.name = "ToggleBG1";
-				toggleBG1Transform.anchorMax = new Vector2(0, 1);
-				toggleBG1Transform.anchorMin = new Vector2(0, 0);
-				toggleBG1Transform.offsetMax = new Vector2(50, 0);
-				toggleBG1Transform.offsetMin = new Vector2(0, -10);
+				RectTransform toggleBG1Transform = InitBasicRectTransformPrefab(
+					"ToggleBG1", manager.configurableTogglePrefab.transform.Find("Panel"), myLabelWith2BXButtonPrefab.transform, new float[] {0, 1, 0, 0, 50, 0, 0, -10}
+				);
 				Image toggleBG1Image = toggleBG1Transform.GetComponent<Image>();
 				toggleBG1Image.sprite = xButtonImage.sprite;
 				toggleBG1Image.color = xButtonImage.color;
 				Toggle toggle1 = toggleBG1Transform.gameObject.AddComponent<Toggle>();
 				toggle1.isOn = true;
 
-				RectTransform toggle1Check = manager.configurableTogglePrefab.transform.Find("Background/Checkmark") as RectTransform;
-				toggle1Check = Instantiate(toggle1Check, toggleBG1Transform);
-				toggle1Check.name = "Toggle1";
-				toggle1Check.anchorMax = new Vector2(1, 1);
-				toggle1Check.anchorMin = new Vector2(0, 0);
-				toggle1Check.offsetMax = new Vector2(2, -10);
-				toggle1Check.offsetMin = new Vector2(3, -10);
+				RectTransform toggle1Check = InitBasicRectTransformPrefab(
+					"Toggle1", manager.configurableTogglePrefab.transform.Find("Background/Checkmark"), toggleBG1Transform, new float[] {1, 1, 0, 0, 2, -10, 3, -10}
+				);
 				Image image1 = toggle1Check.GetComponent<Image>();
 
-				RectTransform toggle1Label = Instantiate(xButtonText.rectTransform, toggle1Check);
-				toggle1Label.name = "Toggle1Label";
-				toggle1Label.anchorMax = new Vector2(1.0f, 1.0f);
-				toggle1Label.anchorMin = new Vector2(0.0f, 0.5f);
-				toggle1Label.offsetMax = new Vector2(0, 4);
-				toggle1Label.offsetMin = new Vector2(-4, 4);
+				RectTransform toggle1Label = InitBasicRectTransformPrefab(
+					"Toggle1Label", xButtonText.rectTransform as Transform, toggle1Check, new float[] {1.0f, 1.0f, 0.0f, 0.5f, 0.0f, 4.0f, -4.0f, 4.0f}
+				);
 				Text toggle1Text = toggle1Label.GetComponent<Text>();
 				toggle1Text.fontSize = 20;
 				toggle1Text.text = "POS";
 				toggle1Text.alignment = TextAnchor.UpperCenter;
 
-				RectTransform toggleBG2Transform = manager.configurableTogglePrefab.transform.Find("Panel") as RectTransform;
-				toggleBG2Transform = Instantiate(toggleBG2Transform, myLabelWith2BXButtonPrefab.transform);
-				toggleBG2Transform.name = "ToggleBG2";
-				toggleBG2Transform.anchorMax = new Vector2(0, 1);
-				toggleBG2Transform.anchorMin = new Vector2(0, 0);
-				toggleBG2Transform.offsetMax = new Vector2(100, 0);
-				toggleBG2Transform.offsetMin = new Vector2(50, -10);
+				RectTransform toggleBG2Transform = InitBasicRectTransformPrefab(
+					"ToggleBG2", manager.configurableTogglePrefab.transform.Find("Panel"), myLabelWith2BXButtonPrefab.transform, new float[] {0, 1, 0, 0, 100, 0, 50, -10}
+				);
 				Image toggleBG2Image = toggleBG2Transform.GetComponent<Image>();
 				toggleBG2Image.sprite = xButtonImage.sprite;
 				toggleBG2Image.color = xButtonImage.color;
 				Toggle toggle2 = toggleBG2Transform.gameObject.AddComponent<Toggle>();
 				toggle2.isOn = true;
 
-				RectTransform toggle2Check = manager.configurableTogglePrefab.transform.Find("Background/Checkmark") as RectTransform;
-				toggle2Check = Instantiate(toggle2Check, toggleBG2Transform);
-				toggle2Check.name = "Toggle2";
-				toggle2Check.anchorMax = new Vector2(1, 1);
-				toggle2Check.anchorMin = new Vector2(0, 0);
-				toggle2Check.offsetMax = new Vector2(2, -10);
-				toggle2Check.offsetMin = new Vector2(3, -10);
+				RectTransform toggle2Check = InitBasicRectTransformPrefab(
+					"Toggle2", manager.configurableTogglePrefab.transform.Find("Background/Checkmark"), toggleBG2Transform, new float[] {1, 1, 0, 0, 2, -10, 3, -10}
+				);
 				Image image2 = toggle2Check.GetComponent<Image>();
 
-				RectTransform toggle2Label = Instantiate(xButtonText.rectTransform, toggle2Check);
-				toggle2Label.name = "Toggle2Label";
-				toggle2Label.anchorMax = new Vector2(1.0f, 1.0f);
-				toggle2Label.anchorMin = new Vector2(0.0f, 0.5f);
-				toggle2Label.offsetMax = new Vector2(0, 4);
-				toggle2Label.offsetMin = new Vector2(-4, 4);
+				RectTransform toggle2Label = InitBasicRectTransformPrefab(
+					"Toggle2Label", xButtonText.rectTransform, toggle2Check, new float[] {1.0f, 1.0f, 0.0f, 0.5f, 0.0f, 4.0f, -4.0f, 4.0f}
+				);
 				Text toggle2Text = toggle2Label.GetComponent<Text>();
 				toggle2Text.fontSize = 20;
 				toggle2Text.text = "ROT";
@@ -392,64 +371,41 @@ namespace HaremLife
 				le.preferredHeight = 50;
 				le.preferredWidth = 500;
 
-				RectTransform backgroundTransform = manager.configurableScrollablePopupPrefab.transform.Find("Background") as RectTransform;
-				backgroundTransform = Instantiate(backgroundTransform, myLabelWithMXButtonPrefab.transform);
-				backgroundTransform.name = "Background";
-				backgroundTransform.anchorMax = new Vector2(1, 1);
-				backgroundTransform.anchorMin = new Vector2(0, 0);
-				backgroundTransform.offsetMax = new Vector2(0, 0);
-				backgroundTransform.offsetMin = new Vector2(0, -10);
+				RectTransform backgroundTransform = InitBasicRectTransformPrefab(
+					"Background", manager.configurableScrollablePopupPrefab.transform.Find("Background"), myLabelWithMXButtonPrefab.transform, new float[] {1, 1, 0, 0, 0, 0, 0, -10}
+				);
 
-				RectTransform xButtonTransform = manager.configurableScrollablePopupPrefab.transform.Find("Button") as RectTransform;
-				xButtonTransform = Instantiate(xButtonTransform, myLabelWithMXButtonPrefab.transform);
-				xButtonTransform.name = "ButtonX";
-				xButtonTransform.anchorMax = new Vector2(1, 1);
-				xButtonTransform.anchorMin = new Vector2(1, 0);
-				xButtonTransform.offsetMax = new Vector2(0, 0);
-				xButtonTransform.offsetMin = new Vector2(-60, -10);
+				RectTransform xButtonTransform = InitBasicRectTransformPrefab(
+					"ButtonX", manager.configurableScrollablePopupPrefab.transform.Find("Button"), myLabelWithMXButtonPrefab.transform, new float[] {1, 1, 1, 0, 0, 0, -60, -10}
+				);
 				Button buttonX = xButtonTransform.GetComponent<Button>();
 				Text xButtonText = xButtonTransform.Find("Text").GetComponent<Text>();
 				xButtonText.text = "X";
 				Image xButtonImage = xButtonTransform.GetComponent<Image>();
 
-				RectTransform labelTransform = xButtonText.rectTransform;
-				labelTransform = Instantiate(labelTransform, myLabelWithMXButtonPrefab.transform);
-				labelTransform.name = "Text";
-				labelTransform.anchorMax = new Vector2(1, 1);
-				labelTransform.anchorMin = new Vector2(0, 0);
-				labelTransform.offsetMax = new Vector2(-65, 0);
-				labelTransform.offsetMin = new Vector2(50, -10);
+				RectTransform labelTransform = InitBasicRectTransformPrefab(
+					"Text", xButtonText.rectTransform, myLabelWithMXButtonPrefab.transform, new float[] {1, 1, 0, 0, -65, 0, 50, -10}
+				);
 				Text labelText = labelTransform.GetComponent<Text>();
 				labelText.verticalOverflow = VerticalWrapMode.Overflow;
 
-				RectTransform toggleBGMTransform = manager.configurableTogglePrefab.transform.Find("Panel") as RectTransform;
-				toggleBGMTransform = Instantiate(toggleBGMTransform, myLabelWithMXButtonPrefab.transform);
-				toggleBGMTransform.name = "ToggleBGM";
-				toggleBGMTransform.anchorMax = new Vector2(0, 1);
-				toggleBGMTransform.anchorMin = new Vector2(0, 0);
-				toggleBGMTransform.offsetMax = new Vector2(50, 0);
-				toggleBGMTransform.offsetMin = new Vector2(0, -10);
+				RectTransform toggleBGMTransform = InitBasicRectTransformPrefab(
+					"ToggleBGM", manager.configurableTogglePrefab.transform.Find("Panel"), myLabelWithMXButtonPrefab.transform, new float[] {0, 1, 0, 0, 50, 0, 0, -10}
+				);
 				Image toggleBGMImage = toggleBGMTransform.GetComponent<Image>();
 				toggleBGMImage.sprite = xButtonImage.sprite;
 				toggleBGMImage.color = xButtonImage.color;
 				Toggle toggleM = toggleBGMTransform.gameObject.AddComponent<Toggle>();
 				toggleM.isOn = true;
 
-				RectTransform toggleMCheck = manager.configurableTogglePrefab.transform.Find("Background/Checkmark") as RectTransform;
-				toggleMCheck = Instantiate(toggleMCheck, toggleBGMTransform);
-				toggleMCheck.name = "ToggleM";
-				toggleMCheck.anchorMax = new Vector2(1, 1);
-				toggleMCheck.anchorMin = new Vector2(0, 0);
-				toggleMCheck.offsetMax = new Vector2(2, -5);
-				toggleMCheck.offsetMin = new Vector2(3, -5);
+				RectTransform toggleMCheck = InitBasicRectTransformPrefab(
+					"ToggleM", manager.configurableTogglePrefab.transform.Find("Background/Checkmark"), toggleBGMTransform, new float[] {1, 1, 0, 0, 2, -5, 3, -5}
+				);
 				Image imageM = toggleMCheck.GetComponent<Image>();
 
-				RectTransform toggleMLabel = Instantiate(xButtonText.rectTransform, toggleMCheck);
-				toggleMLabel.name = "ToggleMLabel";
-				toggleMLabel.anchorMax = new Vector2(0.5f, 1.0f);
-				toggleMLabel.anchorMin = new Vector2(0.0f, 0.5f);
-				toggleMLabel.offsetMax = new Vector2(0, 0);
-				toggleMLabel.offsetMin = new Vector2(0, 0);
+				RectTransform toggleMLabel = InitBasicRectTransformPrefab(
+					"ToggleMLabel", xButtonText.rectTransform, toggleMCheck, new float[] {0.5f, 1.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f}
+				);
 				Text toggleMText = toggleMLabel.GetComponent<Text>();
 				toggleMText.fontSize = 22;
 				toggleMText.text = "M";
@@ -471,6 +427,50 @@ namespace HaremLife
 			myIsFullRefresh = true;
 		}
 
+		private IEnumerable<DictionaryEntry> CastDict(IDictionary dictionary)
+		{
+			foreach (DictionaryEntry entry in dictionary)
+			{
+				yield return entry;
+			}
+		}
+
+		private void populateList(Dictionary<string, AnimationObject> myChoices, JSONStorableStringChooser myMainSelection, AnimationObject myParent, string objectType){
+			List<string> options = new List<string>();
+			if (myParent != null){
+				foreach (var option in myChoices)
+					options.Add(option.Key);
+			}
+			options.Sort();
+			myMainSelection.choices = options;
+			if (objectType == "state") {
+				List<string> stateDisplays = new List<string>(options.Count);
+				for (int i=0; i<options.Count; ++i)
+				{
+					State state = myCurrentLayer.myStates[options[i]];
+					stateDisplays.Add(state.myName);
+				}
+				myMainSelection.displayChoices = stateDisplays;
+			} else {
+				myMainSelection.displayChoices = options;
+			}
+			if (options.Count == 0)
+			{
+				myMainSelection.valNoCallback = "";
+			}
+			else if (!options.Contains(myMainSelection.val))
+			{
+				myMainSelection.valNoCallback = options[0];
+				AnimationObject selection;
+				myChoices.TryGetValue(myMainSelection.val, out selection);
+				if(objectType == "animation")
+					SetAnimation(selection as Animation);
+				else if (objectType == "layer")
+					SetLayer(selection as Layer);
+				UIBlendToState();
+			}
+		}
+
 		private void UISelectMenu(int menuItem)
 		{
 			myMenuItem = menuItem;
@@ -488,72 +488,15 @@ namespace HaremLife
 			myMainState.popup.visible = false;
 			// CleanupMenu();
 
-			List<string> animations = new List<string>();
-			foreach (var animation in myAnimations)
-				animations.Add(animation.Key);
-			animations.Sort();
-			myMainAnimation.choices = animations;
-			myMainAnimation.displayChoices = animations;
-			if (animations.Count == 0)
-			{
-				myMainAnimation.valNoCallback = "";
-			}
-			else if (!animations.Contains(myMainAnimation.val))
-			{
-				myMainAnimation.valNoCallback = animations[0];
-				Animation animation;
-				myAnimations.TryGetValue(myMainAnimation.val, out animation);
-				SetAnimation(animation);
-				UIBlendToState();
-			}
-
-			List<string> layers = new List<string>();
-			if(myCurrentAnimation != null)
-			{
-				foreach (var layer in myCurrentAnimation.myLayers)
-					layers.Add(layer.Key);
-			}
-
-			layers.Sort();
-			myMainLayer.choices = layers;
-			myMainLayer.displayChoices = layers;
-			if (layers.Count == 0)
-			{
-				myMainLayer.valNoCallback = "";
-			}
-			else if (!layers.Contains(myMainLayer.val))
-			{
-				myMainLayer.valNoCallback = layers[0];
-				Layer layer;
-				myCurrentAnimation.myLayers.TryGetValue(myMainLayer.val, out layer);
-				SetLayer(layer);
-				UIBlendToState();
-			}
-
-			List<string> states = new List<string>();
-			if(myCurrentLayer != null)
-			{
-				foreach (var state in myCurrentLayer.myStates)
-					states.Add(state.Key);
-			}
-			states.Sort();
-			List<string> stateDisplays = new List<string>(states.Count);
-			for (int i=0; i<states.Count; ++i)
-			{
-				State state = myCurrentLayer.myStates[states[i]];
-				stateDisplays.Add(state.myName);
-			}
-			myMainState.choices = states;
-			myMainState.displayChoices = stateDisplays;
-			if (states.Count == 0)
-			{
-				myMainState.valNoCallback = "";
-			}
-			else if (!states.Contains(myMainState.val))
-			{
-				myMainState.valNoCallback = states[0];
-				UIBlendToState();
-			}
+			populateList(CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value), myMainAnimation, new AnimationObject("test"), "animation");
+			if (myCurrentAnimation != null)
+				populateList(CastDict(myCurrentAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value), myMainLayer, myCurrentAnimation, "layer");
+			else
+				populateList(new Dictionary<string, AnimationObject>(), myMainLayer, myCurrentAnimation, "layer");
+			if (myCurrentLayer != null)
+				populateList(CastDict(myCurrentLayer.myStates).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value), myMainState, myCurrentLayer, "state");
+			else
+				populateList(new Dictionary<string, AnimationObject>(), myMainState, myCurrentLayer, "state");
 
 			Utils.OnInitUI(CreateUIElement);
 			switch (myMenuItem)
@@ -665,13 +608,9 @@ namespace HaremLife
 				}
 				float extraWidth = (i == MENU_TRANSITIONS || i == MENU_ANIMATIONS) ? 11.0f : 0.0f;
 
-				RectTransform buttonTransform = manager.configurableScrollablePopupPrefab.transform.Find("Button") as RectTransform;
-				buttonTransform = Instantiate(buttonTransform, tabbarPrefab.transform);
-				buttonTransform.name = "Button";
-				buttonTransform.anchorMax = new Vector2(0, 1);
-				buttonTransform.anchorMin = new Vector2(0, 0);
-				buttonTransform.offsetMax = new Vector2(x+width+extraWidth, -15-secondRow);
-				buttonTransform.offsetMin = new Vector2(x, 15-secondRow);
+				RectTransform buttonTransform = InitBasicRectTransformPrefab(
+					"Button", manager.configurableScrollablePopupPrefab.transform.Find("Button"), tabbarPrefab.transform, new float[] {0, 1, 0, 0, x+width+extraWidth, -15-secondRow, x, 15-secondRow}
+				);
 				Button buttonButton = buttonTransform.GetComponent<Button>();
 				uid.buttons.Add(buttonButton);
 				Text buttonText = buttonTransform.Find("Text").GetComponent<Text>();
@@ -1584,7 +1523,7 @@ namespace HaremLife
 		}
 
 		private void UIAddRole() {
-			String name = FindNewRoleName();
+			String name = FindNewName("Role", "roles", myCurrentAnimation.myRoles.Keys.ToList());
 			Role role = new Role(name);
 			myCurrentAnimation.myRoles[name] = role;
 			myRoleList.val = name;
@@ -1604,18 +1543,39 @@ namespace HaremLife
 
 			UIRefreshMenu();
 		}
+		
+		private JSONStorableStringChooser CreateDropDown(
+			Dictionary<string, AnimationObject> myAnimationObjects,
+			AnimationObject myCurrentAnimationObject,
+			JSONStorableStringChooser myAnimationObjectList
+		) {
 
-		private string FindNewRoleName()
-		{
-			for (int i=1; i<1000; ++i)
+			List<string> availableAnimationObjects = new List<string>();
+			foreach (var a in myAnimationObjects)
 			{
-				string name = "Role#" + i;
-				if (!myCurrentAnimation.myRoles.ContainsKey(name))
-					return name;
+				AnimationObject source = a.Value;
+				availableAnimationObjects.Add(source.myName);
 			}
-			SuperController.LogError("AnimationPoser: Too many roles!");
-			return null;
+			availableAnimationObjects.Sort();
+
+			string selectedAnimationObject;
+			if (availableAnimationObjects.Count == 0)
+				selectedAnimationObject= "";
+			else if (myAnimationObjectList == null || !availableAnimationObjects.Contains(myAnimationObjectList.val))
+				selectedAnimationObject = myCurrentAnimationObject.myName;
+			else
+				selectedAnimationObject = myAnimationObjectList.val;
+
+			myAnimationObjectList = new JSONStorableStringChooser("Source Animation", availableAnimationObjects, selectedAnimationObject, "Source Animation");
+			myAnimationObjectList.setCallbackFunction += (string v) => UIRefreshMenu();
+
+			// AnimationObject sourceAnimationObject;
+			// if(!myAnimationObjects.TryGetValue(myAnimationObjectList.val, out sourceAnimationObject)){
+				// return;
+			// };
+			return myAnimationObjectList;
 		}
+
 		private void CreateMessagesMenu()
 		{
 			CreateMenuInfoOneLine("<size=30><b>Messages</b></size>", false);
@@ -2228,7 +2188,7 @@ namespace HaremLife
 
 		private void UIAddAnimation()
 		{
-			string name = FindNewAnimationName();
+			string name = FindNewName("Animation", "animations", new List<string>(myAnimations.Keys));
 			if (name == null)
 				return;
 
@@ -2241,7 +2201,7 @@ namespace HaremLife
 
 		private void UIAddLayer()
 		{
-			string name = FindNewLayerName();
+			string name = FindNewName("Layer", "layers", new List<string>(myCurrentAnimation.myLayers.Keys));
 			if (name == null)
 				return;
 
@@ -2256,7 +2216,7 @@ namespace HaremLife
 
 		private void UIAddState()
 		{
-			string name = FindNewStateName();
+			string name = FindNewName("State", "states", new List<string>(myCurrentLayer.myStates.Keys));
 			if (name == null)
 				return;
 
@@ -2273,7 +2233,7 @@ namespace HaremLife
 			if (source == null)
 				return;
 
-			string name = FindNewStateName();
+			string name = FindNewName("Message", "messages", new List<string>(myMessages.Keys));
 			if (name == null)
 				return;
 
@@ -2302,7 +2262,7 @@ namespace HaremLife
 
 		private void UIAddMessage()
 		{
-			string name = FindNewMessageName();
+			string name = FindNewName("Message", "messages", new List<string>(myMessages.Keys));
 			if (name == null)
 				return;
 
@@ -2326,52 +2286,15 @@ namespace HaremLife
 			UIRefreshMenu();
 		}
 
-
-
-		private string FindNewAnimationName()
+		private string FindNewName(string nameBase, string objectNames, List<string> myExistingNames)
 		{
 			for (int i=1; i<1000; ++i)
 			{
-				string name = "Animation#" + i;
-				if (!myAnimations.ContainsKey(name))
+				string name = nameBase+"#" + i;
+				if (!myExistingNames.Contains(name))
 					return name;
 			}
-			SuperController.LogError("AnimationPoser: Too many animations!");
-			return null;
-		}
-
-		private string FindNewLayerName()
-		{
-			for (int i=1; i<1000; ++i)
-			{
-				string name = "Layer#" + i;
-				if (!myCurrentAnimation.myLayers.ContainsKey(name))
-					return name;
-			}
-			SuperController.LogError("AnimationPoser: Too many layers!");
-			return null;
-		}
-
-		private string FindNewStateName()
-		{
-			for (int i=1; i<1000; ++i)
-			{
-				string name = "State#" + i;
-				if (!myCurrentLayer.myStates.ContainsKey(name))
-					return name;
-			}
-			SuperController.LogError("AnimationPoser: Too many states!");
-			return null;
-		}
-		private string FindNewMessageName()
-		{
-			for (int i=1; i<1000; ++i)
-			{
-				string name = "Message#" + i;
-				if (!myMessages.ContainsKey(name))
-					return name;
-			}
-			SuperController.LogError("AnimationPoser: Too many messages!");
+			SuperController.LogError("AnimationPoser: Too many " + objectNames + "!");
 			return null;
 		}
 
