@@ -244,18 +244,23 @@ namespace HaremLife
 		}
 
 		// =======================================================================================
-
-		private class Animation
+		private class AnimationObject
 		{
 			public string myName;
+
+			public AnimationObject(string name)
+			{
+				myName = name;
+			}
+		}
+
+		private class Animation : AnimationObject
+		{
 			public Dictionary<string, Layer> myLayers = new Dictionary<string, Layer>();
 			public Dictionary<string, Role> myRoles = new Dictionary<string, Role>();
 			public float mySpeed = 1.0f;
 
-			public Animation(string name)
-			{
-				myName = name;
-			}
+			public Animation(string name) : base(name){}
 
 			public void Clear()
 			{
@@ -269,9 +274,8 @@ namespace HaremLife
 		}
 
 		// =======================================================================================
-		private class Layer
+		private class Layer : AnimationObject
 		{
-			public string myName;
 			public Animation myAnimation;
 			public Dictionary<string, State> myStates = new Dictionary<string, State>();
 			public State myCurrentState;
@@ -285,9 +289,8 @@ namespace HaremLife
 			private State myBlendState;
 			private List<State> myStateChain = new List<State>();
 
-			public Layer(string name)
+			public Layer(string name) : base(name)
 			{
-				myName = name;
 				myAnimation = myCurrentAnimation;
 			}
 
@@ -610,9 +613,8 @@ namespace HaremLife
 			}
 		}
 
-		private class State
+		private class State : AnimationObject
 		{
-			public string myName;
 			public Layer myLayer;
 			public float myWaitDurationMin;
 			public float myWaitDurationMax;
@@ -630,9 +632,8 @@ namespace HaremLife
 			public EventTrigger ExitBeginTrigger;
 			public EventTrigger ExitEndTrigger;
 
-			public State(MVRScript script, string name, Layer layer)
+			public State(MVRScript script, string name, Layer layer) : base(name)
 			{
-				myName = name;
 				myLayer = layer;
 				EnterBeginTrigger = new EventTrigger(script, "OnEnterBegin", name);
 				EnterEndTrigger = new EventTrigger(script, "OnEnterEnd", name);
@@ -640,15 +641,13 @@ namespace HaremLife
 				ExitEndTrigger = new EventTrigger(script, "OnExitEnd", name);
 			}
 
-			public State(string name, Layer layer)
+			public State(string name, Layer layer) : base(name)
 			{
-				myName = name;
 				myLayer = layer;
 			}
 
-			public State(string name, State source)
+			public State(string name, State source) : base(name)
 			{
-				myName = name;
 				myLayer = myCurrentLayer;
 				myWaitDurationMin = source.myWaitDurationMin;
 				myWaitDurationMax = source.myWaitDurationMax;
