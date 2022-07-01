@@ -393,7 +393,7 @@ namespace HaremLife
 
 			Layer layer;
 			if(newName)
-				layer = CreateLayer(FindNewLayerName());
+				layer = CreateLayer(FindNewName("Layer", "layers", new List<string>(myCurrentAnimation.myLayers.Keys)));
 			else
 				layer = CreateLayer(layerObj["Name"]);
 
