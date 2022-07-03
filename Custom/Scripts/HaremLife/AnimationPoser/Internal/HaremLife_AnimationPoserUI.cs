@@ -474,12 +474,10 @@ namespace HaremLife
 			return myAnimationObjectList;
 		}
 
-		private void populateList(Dictionary<string, AnimationObject> myChoices, JSONStorableStringChooser myMainSelection, AnimationObject myParent, string objectType){
+		private void CreateMainDropDown(Dictionary<string, AnimationObject> myChoices, JSONStorableStringChooser myMainSelection, AnimationObject myParent, string objectType){
 			List<string> options = new List<string>();
-			if (myParent != null){
-				foreach (var option in myChoices)
-					options.Add(option.Key);
-			}
+			foreach (var option in myChoices)
+				options.Add(option.Key);
 			options.Sort();
 			myMainSelection.choices = options;
 			if (objectType == "state") {
@@ -519,22 +517,47 @@ namespace HaremLife
 
 			myPaused = (myMenuItem != MENU_PLAY || myPlayPaused.val);
 			myPlayMode = (myMenuItem == MENU_PLAY);
-			myMainAnimation.popup.visible = true; // Workaround for PopupPanel appearing behind other UI for some reason
-			myMainAnimation.popup.visible = false;
-			myMainLayer.popup.visible = true; // Workaround for PopupPanel appearing behind other UI for some reason
-			myMainLayer.popup.visible = false;
-			myMainState.popup.visible = true; // Workaround for PopupPanel appearing behind other UI for some reason
-			myMainState.popup.visible = false;
+			// myMainAnimation.popup.visible = true; // Workaround for PopupPanel appearing behind other UI for some reason
+			// myMainAnimation.popup.visible = false;
+			// myMainLayer.popup.visible = true; // Workaround for PopupPanel appearing behind other UI for some reason
+			// myMainLayer.popup.visible = false;
+			// myMainState.popup.visible = true; // Workaround for PopupPanel appearing behind other UI for some reason
+			// myMainState.popup.visible = false;
 
-			populateList(CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value), myMainAnimation, new AnimationObject("test"), "animation");
+			CreateMainDropDown(
+				CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				myMainAnimation,
+				new AnimationObject("test"),
+				"animation"
+			);
 			if (myCurrentAnimation != null)
-				populateList(CastDict(myCurrentAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value), myMainLayer, myCurrentAnimation, "layer");
+				CreateMainDropDown(
+					CastDict(myCurrentAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					myMainLayer,
+					myCurrentAnimation,
+					"layer"
+				);
 			else
-				populateList(new Dictionary<string, AnimationObject>(), myMainLayer, myCurrentAnimation, "layer");
+				CreateMainDropDown(
+					new Dictionary<string, AnimationObject>(),
+					myMainLayer,
+					myCurrentAnimation,
+					"layer"
+				);
 			if (myCurrentLayer != null)
-				populateList(CastDict(myCurrentLayer.myStates).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value), myMainState, myCurrentLayer, "state");
+				CreateMainDropDown(
+					CastDict(myCurrentLayer.myStates).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					myMainState,
+					myCurrentLayer,
+					"state"
+				);
 			else
-				populateList(new Dictionary<string, AnimationObject>(), myMainState, myCurrentLayer, "state");
+				CreateMainDropDown(
+					new Dictionary<string, AnimationObject>(),
+					myMainState,
+					myCurrentLayer,
+					"state"
+				);
 
 			Utils.OnInitUI(CreateUIElement);
 			switch (myMenuItem)
@@ -1330,15 +1353,6 @@ namespace HaremLife
 					"Sync Layer"
 				);
 
-				// string selectedSyncLayer;
-				// if (mySyncLayerList == null || !syncLayers.Contains(mySyncLayerList.val))
-					// selectedSyncLayer = syncLayers[0];
-				// else
-					// selectedSyncLayer = mySyncLayerList.val;
-
-				// mySyncLayerList = new JSONStorableStringChooser("Sync Layer", syncLayers, selectedSyncLayer, "Sync Layer");
-				// mySyncLayerList.setCallbackFunction += (string v) => UIRefreshMenu();
-
 				CreateMenuPopup(mySyncLayerList, true);
 
 				Layer syncLayer;
@@ -1379,15 +1393,6 @@ namespace HaremLife
 						mySyncStateList,
 						"Sync State"
 					);
-
-					// string selectedSyncState;
-					// if (mySyncStateList == null || !syncStates.Contains(mySyncStateList.val))
-						// selectedSyncState = syncStates[0];
-					// else
-						// selectedSyncState = mySyncStateList.val;
-
-					// mySyncStateList = new JSONStorableStringChooser("Sync State", syncStates, selectedSyncState, "Sync State");
-					// mySyncStateList.setCallbackFunction += (string v) => UIRefreshMenu();
 
 					CreateMenuPopup(mySyncStateList, true);
 					CreateMenuButton("Sync State", () => {
@@ -1450,24 +1455,6 @@ namespace HaremLife
 				myRoleList,
 				"Role"
 			);
-			// List<string> roles = new List<string>();
-			// foreach (var r in myCurrentAnimation.myRoles)
-			// {
-				// roles.Add(r.Value.myName);
-			// }
-			// roles.Sort();
-
-			// String selectedRoleName;
-			// if (myRoleList == null || !roles.Contains(myRoleList.val))
-				// if(roles.Count > 0) {
-					// selectedRoleName = roles[0];
-				// } else {
-					// selectedRoleName = "";
-				// }
-			// else
-				// selectedRoleName = myRoleList.val;
-			// myRoleList = new JSONStorableStringChooser("Role", roles, selectedRoleName, "Role");
-			// myRoleList.setCallbackFunction += (string v) => UIRefreshMenu();
 
 			CreateMenuPopup(myRoleList, true);
 
