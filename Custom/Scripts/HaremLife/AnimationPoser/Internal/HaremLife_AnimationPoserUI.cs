@@ -419,6 +419,60 @@ namespace HaremLife
 				yield return entry;
 			}
 		}
+		
+		private List<string> GetAvailableOptions(
+			Dictionary<string, AnimationObject> myAnimationObjects,
+			bool singleChoice = false,
+			AnimationObject mySingleChoice = null
+		) {
+			List<string> availableAnimationObjects = new List<string>();
+			if (singleChoice) {
+				availableAnimationObjects.Add(mySingleChoice.myName);
+			} else {
+				foreach (var a in myAnimationObjects)
+				{
+					AnimationObject source = a.Value;
+					availableAnimationObjects.Add(source.myName);
+				}
+			}
+			availableAnimationObjects.Sort();
+
+			return availableAnimationObjects;
+		}
+
+		private JSONStorableStringChooser PopulateJSONChooserSelection(
+			List<string> availableAnimationObjects,
+			JSONStorableStringChooser myAnimationObjectList,
+			string strLabel,
+			bool singleChoice = false
+		) {
+			string selectedAnimationObject;
+			if (availableAnimationObjects.Count == 0)
+				selectedAnimationObject= "";
+			else if(singleChoice || myAnimationObjectList == null || !availableAnimationObjects.Contains(myAnimationObjectList.val))
+				selectedAnimationObject = availableAnimationObjects[0];
+			else
+				selectedAnimationObject = myAnimationObjectList.val;
+
+			myAnimationObjectList = new JSONStorableStringChooser(strLabel, availableAnimationObjects, selectedAnimationObject, strLabel);
+			myAnimationObjectList.setCallbackFunction += (string v) => UIRefreshMenu();
+
+			return myAnimationObjectList;
+		}
+		
+		private JSONStorableStringChooser CreateDropDown(
+			Dictionary<string, AnimationObject> myAnimationObjects,
+			JSONStorableStringChooser myAnimationObjectList,
+			string strLabel,
+			bool singleChoice = false,
+			AnimationObject mySingleChoice = null
+		) {
+
+			List<string> availableAnimationObjects = GetAvailableOptions(myAnimationObjects, singleChoice, mySingleChoice);
+			myAnimationObjectList = PopulateJSONChooserSelection(availableAnimationObjects, myAnimationObjectList, strLabel, singleChoice);
+
+			return myAnimationObjectList;
+		}
 
 		private void populateList(Dictionary<string, AnimationObject> myChoices, JSONStorableStringChooser myMainSelection, AnimationObject myParent, string objectType){
 			List<string> options = new List<string>();
@@ -1088,25 +1142,11 @@ namespace HaremLife
 			}
 			transitions.Sort((UITransition a, UITransition b) => a.state.myName.CompareTo(b.state.myName));
 
-			List<string> availableAnimations = new List<string>();
-			foreach (var a in myAnimations)
-			{
-				Animation target = a.Value;
-				availableAnimations.Add(target.myName);
-			}
-			availableAnimations.Sort();
-
-			string selectedTargetAnimation;
-			if (availableAnimations.Count == 0)
-				selectedTargetAnimation= "";
-			else if (myTargetAnimationList == null || !availableAnimations.Contains(myTargetAnimationList.val))
-				selectedTargetAnimation = myCurrentAnimation.myName;
-			else
-				selectedTargetAnimation = myTargetAnimationList.val;
-
-			myTargetAnimationList = new JSONStorableStringChooser("Target Animation", availableAnimations, selectedTargetAnimation, "Target Animation");
-			myTargetAnimationList.setCallbackFunction += (string v) => UIRefreshMenu();
-
+			myTargetAnimationList = CreateDropDown(
+				CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				myTargetAnimationList,
+				"Target Animation"
+			);
 			Animation targetAnimation;
 			if(!myAnimations.TryGetValue(myTargetAnimationList.val, out targetAnimation)){
 				return;
@@ -1114,29 +1154,24 @@ namespace HaremLife
 
 			Layer targetLayer;
 			List<string> availableLayers = new List<string>();
+			bool singleChoice = false;
+			AnimationObject mySingleChoice = null;
 			if(targetAnimation != myCurrentAnimation) {
-				foreach (var l in targetAnimation.myLayers)
-				{
-					Layer target = l.Value;
-					availableLayers.Add(target.myName);
-				}
-				availableLayers.Sort();
-
-				string selectedTargetLayer;
-				if (availableLayers.Count == 0)
-					selectedTargetLayer = "";
-				else if (myTargetLayerList == null || !availableLayers.Contains(myTargetLayerList.val))
-					selectedTargetLayer = myCurrentLayer.myName;
-				else
-					selectedTargetLayer = myTargetLayerList.val;
-
-				myTargetLayerList = new JSONStorableStringChooser("Target Layer", availableLayers, selectedTargetLayer, "Target Layer");
-				myTargetLayerList.setCallbackFunction += (string v) => UIRefreshMenu();
-
-				if(!targetAnimation.myLayers.TryGetValue(myTargetLayerList.val, out targetLayer))
-					return;
-			} else
-				targetLayer = myCurrentLayer;
+				singleChoice = false;
+				mySingleChoice = null;
+			} else {
+				singleChoice = true;
+				mySingleChoice = myCurrentLayer as AnimationObject;
+			}
+			myTargetLayerList = CreateDropDown(
+				CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				myTargetLayerList,
+				"Target Layer",
+				singleChoice:singleChoice,
+				mySingleChoice:mySingleChoice
+			);
+			if(!targetAnimation.myLayers.TryGetValue(myTargetLayerList.val, out targetLayer))
+				return;
 
 			List<string> availableStates = new List<string>();
 			foreach (var s in targetLayer.myStates)
@@ -1148,24 +1183,19 @@ namespace HaremLife
 			}
 			availableStates.Sort();
 
-			string selectedTargetState;
-			if (availableStates.Count == 0)
-				selectedTargetState = "";
-			else if (myTargetStateList == null || !availableStates.Contains(myTargetStateList.val))
-				selectedTargetState = availableStates[0];
-			else
-				selectedTargetState = myTargetStateList.val;
+			myTargetStateList = PopulateJSONChooserSelection(
+				availableStates,
+				myTargetStateList,
+				"Target State"
+			);
 
-			myTargetStateList = new JSONStorableStringChooser("Target State", availableStates, selectedTargetState, "Target State");
-			myTargetStateList.setCallbackFunction += (string v) => UIRefreshMenu();
-
-			if(availableAnimations.Count > 0) {
+			if(myTargetAnimationList.choices.Count > 0) {
 				CreateMenuPopup(myTargetAnimationList, false);
 			}
-			if(availableLayers.Count > 0) {
+			if(myTargetLayerList.choices.Count > 0) {
 				CreateMenuPopup(myTargetLayerList, false);
 			}
-			if (availableStates.Count > 0)
+			if (myTargetStateList.choices.Count > 0)
 			{
 				CreateMenuPopup(myTargetStateList, false);
 				CreateMenuButton("Add Transition", UIAddTransition, false);
@@ -1197,23 +1227,12 @@ namespace HaremLife
 			Transition transition = state.getIncomingTransition(targetState);
 
 			if(transition != null) {
-				List<string> syncRoles = new List<string>();
-				foreach (var r in targetAnimation.myRoles)
-				{
-					syncRoles.Add(r.Value.myName);
-				}
-				syncRoles.Sort();
-
-				string selectedRoleName;
-				if (syncRoles.Count == 0)
-					selectedRoleName = "";
-				else if(mySyncRoleList != null && syncRoles.Contains(mySyncRoleList.val))
-					selectedRoleName = mySyncRoleList.val;
-				else
-					selectedRoleName = syncRoles[0];
-
-				mySyncRoleList = new JSONStorableStringChooser("Sync Role", syncRoles, selectedRoleName, "Sync Role");
-				mySyncRoleList.setCallbackFunction += (string v) => UIRefreshMenu();
+				
+				mySyncRoleList = CreateDropDown(
+					CastDict(targetAnimation.myRoles).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					mySyncRoleList,
+					"Sync Role"
+				);
 
 				CreateMenuSpacer(10, false);
 				CreateMenuInfoOneLine("<size=30><b>Messages</b></size>", false);
@@ -1305,14 +1324,20 @@ namespace HaremLife
 					return;
 				}
 
-				string selectedSyncLayer;
-				if (mySyncLayerList == null || !syncLayers.Contains(mySyncLayerList.val))
-					selectedSyncLayer = syncLayers[0];
-				else
-					selectedSyncLayer = mySyncLayerList.val;
+				mySyncLayerList = PopulateJSONChooserSelection(
+					syncLayers,
+					mySyncLayerList,
+					"Sync Layer"
+				);
 
-				mySyncLayerList = new JSONStorableStringChooser("Sync Layer", syncLayers, selectedSyncLayer, "Sync Layer");
-				mySyncLayerList.setCallbackFunction += (string v) => UIRefreshMenu();
+				// string selectedSyncLayer;
+				// if (mySyncLayerList == null || !syncLayers.Contains(mySyncLayerList.val))
+					// selectedSyncLayer = syncLayers[0];
+				// else
+					// selectedSyncLayer = mySyncLayerList.val;
+
+				// mySyncLayerList = new JSONStorableStringChooser("Sync Layer", syncLayers, selectedSyncLayer, "Sync Layer");
+				// mySyncLayerList.setCallbackFunction += (string v) => UIRefreshMenu();
 
 				CreateMenuPopup(mySyncLayerList, true);
 
@@ -1349,14 +1374,20 @@ namespace HaremLife
 						return;
 					}
 
-					string selectedSyncState;
-					if (mySyncStateList == null || !syncStates.Contains(mySyncStateList.val))
-						selectedSyncState = syncStates[0];
-					else
-						selectedSyncState = mySyncStateList.val;
+					mySyncStateList = PopulateJSONChooserSelection(
+						syncStates,
+						mySyncStateList,
+						"Sync State"
+					);
 
-					mySyncStateList = new JSONStorableStringChooser("Sync State", syncStates, selectedSyncState, "Sync State");
-					mySyncStateList.setCallbackFunction += (string v) => UIRefreshMenu();
+					// string selectedSyncState;
+					// if (mySyncStateList == null || !syncStates.Contains(mySyncStateList.val))
+						// selectedSyncState = syncStates[0];
+					// else
+						// selectedSyncState = mySyncStateList.val;
+
+					// mySyncStateList = new JSONStorableStringChooser("Sync State", syncStates, selectedSyncState, "Sync State");
+					// mySyncStateList.setCallbackFunction += (string v) => UIRefreshMenu();
 
 					CreateMenuPopup(mySyncStateList, true);
 					CreateMenuButton("Sync State", () => {
@@ -1414,24 +1445,29 @@ namespace HaremLife
 			CreateMenuInfo("The Roles tab allows you to define roles for a layer. Each role can be assigned to a person, and used in the transitions tab to sync the layers of that person. Like in a play, the roles can be assigned and switched between different persons with minimal work to the script writer :)", 230, false);
 
 			CreateMenuSpacer(132, true);
-			List<string> roles = new List<string>();
-			foreach (var r in myCurrentAnimation.myRoles)
-			{
-				roles.Add(r.Value.myName);
-			}
-			roles.Sort();
+			myRoleList = CreateDropDown(
+				CastDict(myCurrentAnimation.myRoles).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				myRoleList,
+				"Role"
+			);
+			// List<string> roles = new List<string>();
+			// foreach (var r in myCurrentAnimation.myRoles)
+			// {
+				// roles.Add(r.Value.myName);
+			// }
+			// roles.Sort();
 
-			String selectedRoleName;
-			if (myRoleList == null || !roles.Contains(myRoleList.val))
-				if(roles.Count > 0) {
-					selectedRoleName = roles[0];
-				} else {
-					selectedRoleName = "";
-				}
-			else
-				selectedRoleName = myRoleList.val;
-			myRoleList = new JSONStorableStringChooser("Role", roles, selectedRoleName, "Role");
-			myRoleList.setCallbackFunction += (string v) => UIRefreshMenu();
+			// String selectedRoleName;
+			// if (myRoleList == null || !roles.Contains(myRoleList.val))
+				// if(roles.Count > 0) {
+					// selectedRoleName = roles[0];
+				// } else {
+					// selectedRoleName = "";
+				// }
+			// else
+				// selectedRoleName = myRoleList.val;
+			// myRoleList = new JSONStorableStringChooser("Role", roles, selectedRoleName, "Role");
+			// myRoleList.setCallbackFunction += (string v) => UIRefreshMenu();
 
 			CreateMenuPopup(myRoleList, true);
 
@@ -1512,65 +1548,6 @@ namespace HaremLife
 
 			UIRefreshMenu();
 		}
-		
-		private List<string> GetAvailableOptions(
-			Dictionary<string, AnimationObject> myAnimationObjects,
-			Message selectedMessage,
-			bool singleChoice = false,
-			AnimationObject mySingleChoice = null,
-			string objectType = ""
-		) {
-			List<string> availableAnimationObjects = new List<string>();
-			if (singleChoice) {
-				availableAnimationObjects.Add(mySingleChoice.myName);
-			} else {
-				foreach (var a in myAnimationObjects)
-				{
-					AnimationObject source = a.Value;
-					availableAnimationObjects.Add(source.myName);
-				}
-			}
-			availableAnimationObjects.Sort();
-
-			return availableAnimationObjects;
-		}
-
-		private JSONStorableStringChooser PopulateJSONChooserSelection(
-			List<string> availableAnimationObjects,
-			JSONStorableStringChooser myAnimationObjectList,
-			Message selectedMessage,
-			string strLabel,
-			bool singleChoice = false
-		) {
-			string selectedAnimationObject;
-			if (availableAnimationObjects.Count == 0)
-				selectedAnimationObject= "";
-			else if(singleChoice || myAnimationObjectList == null || !availableAnimationObjects.Contains(myAnimationObjectList.val))
-				selectedAnimationObject = availableAnimationObjects[0];
-			else
-				selectedAnimationObject = myAnimationObjectList.val;
-
-			myAnimationObjectList = new JSONStorableStringChooser(strLabel, availableAnimationObjects, selectedAnimationObject, strLabel);
-			myAnimationObjectList.setCallbackFunction += (string v) => UIRefreshMenu();
-
-			return myAnimationObjectList;
-		}
-		
-		private JSONStorableStringChooser CreateDropDown(
-			Dictionary<string, AnimationObject> myAnimationObjects,
-			JSONStorableStringChooser myAnimationObjectList,
-			Message selectedMessage,
-			string strLabel,
-			bool singleChoice = false,
-			AnimationObject mySingleChoice = null,
-			string objectType = ""
-		) {
-
-			List<string> availableAnimationObjects = GetAvailableOptions(myAnimationObjects, selectedMessage, singleChoice, mySingleChoice, objectType, isDebug);
-			myAnimationObjectList = PopulateJSONChooserSelection(availableAnimationObjects, myAnimationObjectList, selectedMessage, strLabel, singleChoice);
-
-			return myAnimationObjectList;
-		}
 
 		private void CreateMessagesMenu()
 		{
@@ -1631,7 +1608,6 @@ namespace HaremLife
 			mySourceAnimationList = CreateDropDown(
 				CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
 				mySourceAnimationList,
-				selectedMessage,
 				"Source Animation"
 			);
 			Animation sourceAnimation;
@@ -1652,7 +1628,6 @@ namespace HaremLife
 			myTargetAnimationList = CreateDropDown(
 				CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
 				myTargetAnimationList,
-				selectedMessage,
 				"Target Animation",
 				singleChoice:singleChoice,
 				mySingleChoice:mySingleChoice
@@ -1672,7 +1647,6 @@ namespace HaremLife
 			mySourceLayerList = CreateDropDown(
 				CastDict(sourceAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
 				mySourceLayerList,
-				selectedMessage,
 				"Source Layer",
 				singleChoice:singleChoice,
 				mySingleChoice:mySingleChoice
@@ -1695,7 +1669,6 @@ namespace HaremLife
 			myTargetLayerList = CreateDropDown(
 				CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
 				myTargetLayerList,
-				selectedMessage,
 				"Target Layer",
 				singleChoice:singleChoice,
 				mySingleChoice:mySingleChoice
@@ -1743,7 +1716,6 @@ namespace HaremLife
 			mySourceStateList = PopulateJSONChooserSelection(
 				availableSourceStates,
 				mySourceStateList,
-				selectedMessage,
 				"Source State"
 			);
 
@@ -1766,7 +1738,6 @@ namespace HaremLife
 			myTargetStateList = PopulateJSONChooserSelection(
 				availableTargetStates,
 				myTargetStateList,
-				selectedMessage,
 				"Target State"
 			);
 
