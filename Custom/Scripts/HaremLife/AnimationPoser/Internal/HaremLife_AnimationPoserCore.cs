@@ -515,13 +515,12 @@ namespace HaremLife
 				// myMainState.valNoCallback = myCurrentState.myName;
 			}
 		}
-		private class Role
+		private class Role : AnimationObject
 		{
 			public String myName;
 			public Atom myPerson;
 
-			public Role(string name){
-				myName = name;
+			public Role(string name) : base(name) {
 			}
 		}
 
