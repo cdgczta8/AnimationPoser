@@ -160,15 +160,6 @@ namespace HaremLife
 			myGlobalDefaultWaitDurationMin = new JSONStorableFloat("Default Wait Duration Min", DEFAULT_WAIT_DURATION_MIN, 0.0f, 300.0f, true, true);
 			myGlobalDefaultWaitDurationMax = new JSONStorableFloat("Default Wait Duration Max", DEFAULT_WAIT_DURATION_MAX, 0.0f, 300.0f, true, true);
 
-			// myOptionsDefaultToWorldAnchor = new JSONStorableBool("Default to World Anchor", false);
-			// myDebugShowInfo = new JSONStorableBool("Show Debug Info", false);
-			// myDebugShowInfo.setCallbackFunction += (bool v) => UIRefreshMenu();
-			// myDebugShowPaths = new JSONStorableBool("Draw Paths", false);
-			// myDebugShowPaths.setCallbackFunction += DebugSwitchShowCurves;
-			// myDebugShowTransitions = new JSONStorableBool("Draw Transitions", false);
-			// myDebugShowTransitions.setCallbackFunction += DebugSwitchShowCurves;
-			// myDebugShowSelectedOnly = new JSONStorableBool("Draw Selected Only", false);
-
 			UIRefreshMenu();
 
 			SuperController.singleton.BroadcastMessage("OnActionsProviderAvailable", this, SendMessageOptions.DontRequireReceiver);
@@ -209,11 +200,6 @@ namespace HaremLife
 				myStateAutoTransition.val = !myStateAutoTransition.val;
 				OpenTab(2);
 			}));
-
-			// bindings.Add(new JSONStorableAction("Toggle Debug Info",          () => myDebugShowInfo.val = !myDebugShowInfo.val));
-			// bindings.Add(new JSONStorableAction("Toggle Debug Paths",         () => myDebugShowPaths.val = !myDebugShowPaths.val));
-			// bindings.Add(new JSONStorableAction("Toggle Debug Transitions",   () => myDebugShowTransitions.val = !myDebugShowTransitions.val));
-			// bindings.Add(new JSONStorableAction("Toggle Debug Selected Only", () => myDebugShowSelectedOnly.val = !myDebugShowSelectedOnly.val));
 		}
 
 		private void OpenTab(int tabIdx)
@@ -257,7 +243,6 @@ namespace HaremLife
 		
 		private RectTransform InitBasicRectTransformPrefab(string prefabName, Transform initTransform, Transform instTransform, float[] coordsArray, bool initialCast = true)
 		{
-			// RectTransform myTransform = new RectTransform();
 			RectTransform myTransform = Instantiate(initTransform as RectTransform, instTransform);
 			myTransform.name = prefabName;
 			myTransform.anchorMax = new Vector2(coordsArray[0], coordsArray[1]);
@@ -423,7 +408,6 @@ namespace HaremLife
 		{
 			CleanupMenu();
 			CreateMainUI();
-			// myIsFullRefresh = false;
 			UISelectMenu(myMenuItem);
 			myIsFullRefresh = true;
 		}
@@ -487,7 +471,6 @@ namespace HaremLife
 			myMainLayer.popup.visible = false;
 			myMainState.popup.visible = true; // Workaround for PopupPanel appearing behind other UI for some reason
 			myMainState.popup.visible = false;
-			// CleanupMenu();
 
 			populateList(CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value), myMainAnimation, new AnimationObject("test"), "animation");
 			if (myCurrentAnimation != null)
@@ -573,7 +556,6 @@ namespace HaremLife
 
 			CreateTabs(new string[] { "Play", "Animations", "Layers", "States", "Transitions", "Triggers", "Anchors", "Roles", "Messages", "Options" });
 
-			// myMenuElements.Clear();
 		}
 
 		private void CreateTabs(string[] menuItems) {
@@ -584,14 +566,6 @@ namespace HaremLife
 			le.minWidth = 1064;
 			le.preferredHeight = 90;
 			le.preferredWidth = 1064;
-
-			// RectTransform backgroundTransform = manager.configurableScrollablePopupPrefab.transform.Find("Background") as RectTransform;
-			// backgroundTransform = Instantiate(backgroundTransform, tabbarPrefab.transform);
-			// backgroundTransform.name = "Background";
-			// backgroundTransform.anchorMax = new Vector2(1, 1);
-			// backgroundTransform.anchorMin = new Vector2(0, 0);
-			// backgroundTransform.offsetMax = new Vector2(0, 0);
-			// backgroundTransform.offsetMin = new Vector2(0, 0);
 
 			UIDynamicTabBar uid = tabbarPrefab.AddComponent<UIDynamicTabBar>();
 
@@ -626,7 +600,7 @@ namespace HaremLife
 			{
 				int menuItem = i;
 				myMenuTabBar.buttons[i].onClick.AddListener(
-					() => {myMenuItem = menuItem; UIRefreshMenu();} //UISelectMenu(menuItem)
+					() => {myMenuItem = menuItem; UIRefreshMenu();}
 				);
 			}
 
@@ -638,13 +612,10 @@ namespace HaremLife
 		{
 			CreateMenuInfoOneLine("<size=30><b>Play Idle</b></size>", false);
 
-			// if (!myDebugShowInfo.val)
-			// {
-				if (myCurrentLayer != null && myCurrentLayer.myStates.Count > 0)
-					myPlayInfo.val = "AnimationPoser is playing animations.";
-				else
-					myPlayInfo.val = "You need to add some states and transitions before you can play animations.";
-			// }
+			if (myCurrentLayer != null && myCurrentLayer.myStates.Count > 0)
+				myPlayInfo.val = "AnimationPoser is playing animations.";
+			else
+				myPlayInfo.val = "You need to add some states and transitions before you can play animations.";
 
 			CreateMenuInfo(myPlayInfo, 300, false);
 			CreateMenuToggle(myPlayPaused, false);
@@ -1473,11 +1444,8 @@ namespace HaremLife
 				if (storableId == null) continue;
 				MVRScript storable = atom.GetStorableByID(storableId) as MVRScript;
 				if (storable == null) continue;
-				// if (ReferenceEquals(storable, _plugin)) continue;
 				if (!storable.enabled) continue;
-				// syncRoles.Add(storable.name);
 				people.Add(atom.name);
-				// storable.SendMessage(nameof(AnimationPoser.GetCalled), "");
 			}
 			people.Sort();
 
@@ -1550,15 +1518,12 @@ namespace HaremLife
 			Message selectedMessage,
 			bool singleChoice = false,
 			AnimationObject mySingleChoice = null,
-			string objectType = "",
-			bool isDebug = false
+			string objectType = ""
 		) {
 			List<string> availableAnimationObjects = new List<string>();
 			if (singleChoice) {
 				availableAnimationObjects.Add(mySingleChoice.myName);
 			} else {
-				if (isDebug)
-					SuperController.LogError("in the else");
 				foreach (var a in myAnimationObjects)
 				{
 					AnimationObject source = a.Value;
@@ -1572,19 +1537,16 @@ namespace HaremLife
 
 		private JSONStorableStringChooser PopulateJSONChooserSelection(
 			List<string> availableAnimationObjects,
-			string myCurrentAnimationObjectName,
 			JSONStorableStringChooser myAnimationObjectList,
 			Message selectedMessage,
 			string strLabel,
 			bool singleChoice = false
 		) {
 			string selectedAnimationObject;
-			if(singleChoice & (selectedMessage.myTargetState != null))
-				selectedAnimationObject = availableAnimationObjects[0];
-			else if (availableAnimationObjects.Count == 0)
+			if (availableAnimationObjects.Count == 0)
 				selectedAnimationObject= "";
-			else if (myAnimationObjectList == null || !availableAnimationObjects.Contains(myAnimationObjectList.val))
-				selectedAnimationObject = myCurrentAnimationObjectName;
+			else if(singleChoice || myAnimationObjectList == null || !availableAnimationObjects.Contains(myAnimationObjectList.val))
+				selectedAnimationObject = availableAnimationObjects[0];
 			else
 				selectedAnimationObject = myAnimationObjectList.val;
 
@@ -1596,23 +1558,16 @@ namespace HaremLife
 		
 		private JSONStorableStringChooser CreateDropDown(
 			Dictionary<string, AnimationObject> myAnimationObjects,
-			string myCurrentAnimationObjectName,
 			JSONStorableStringChooser myAnimationObjectList,
 			Message selectedMessage,
 			string strLabel,
 			bool singleChoice = false,
 			AnimationObject mySingleChoice = null,
-			string objectType = "",
-			bool isDebug = false
+			string objectType = ""
 		) {
 
 			List<string> availableAnimationObjects = GetAvailableOptions(myAnimationObjects, selectedMessage, singleChoice, mySingleChoice, objectType, isDebug);
-			if (isDebug)
-				foreach (var available in availableAnimationObjects)
-					SuperController.LogError("Available " + objectType + ": " + available);
-			myAnimationObjectList = PopulateJSONChooserSelection(availableAnimationObjects, myCurrentAnimationObjectName, myAnimationObjectList, selectedMessage, strLabel, singleChoice);
-			if (isDebug)
-				SuperController.LogError("made it");
+			myAnimationObjectList = PopulateJSONChooserSelection(availableAnimationObjects, myAnimationObjectList, selectedMessage, strLabel, singleChoice);
 
 			return myAnimationObjectList;
 		}
@@ -1675,7 +1630,6 @@ namespace HaremLife
 
 			mySourceAnimationList = CreateDropDown(
 				CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-				myCurrentAnimation.myName,
 				mySourceAnimationList,
 				selectedMessage,
 				"Source Animation"
@@ -1686,92 +1640,66 @@ namespace HaremLife
 			};
 
 			Animation targetAnimation;
+			bool singleChoice = false;
+			AnimationObject mySingleChoice = null;
 			if (selectedMessage.myTargetState == null) {
-				myTargetAnimationList = CreateDropDown(
-					CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-					myCurrentAnimation.myName,
-					myTargetAnimationList,
-					selectedMessage,
-					"Target Animation",
-					singleChoice:false
-				);
-				if(!myAnimations.TryGetValue(myTargetAnimationList.val, out targetAnimation)){
-					return;
-				};
+				singleChoice=false;
+				mySingleChoice=null;
 			} else {
-				myTargetAnimationList = CreateDropDown(
-					CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-					myCurrentAnimation.myName,
-					myTargetAnimationList,
-					selectedMessage,
-					"Target Animation",
-					singleChoice:true,
-					mySingleChoice:selectedMessage.myTargetState.myAnimation() as AnimationObject
-				);
-				if(!myAnimations.TryGetValue(myTargetAnimationList.val, out targetAnimation)){
-					return;
-				};
+				singleChoice=true;
+				mySingleChoice=selectedMessage.myTargetState.myAnimation() as AnimationObject;
 			}
+			myTargetAnimationList = CreateDropDown(
+				CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				myTargetAnimationList,
+				selectedMessage,
+				"Target Animation",
+				singleChoice:singleChoice,
+				mySingleChoice:mySingleChoice
+			);
+			if(!myAnimations.TryGetValue(myTargetAnimationList.val, out targetAnimation)){
+				return;
+			};
 
 			Layer sourceLayer;
 			if (selectedMessage.myTargetState == null || sourceAnimation != selectedMessage.myTargetState.myLayer.myAnimation) {
-				mySourceLayerList = CreateDropDown(
-					CastDict(sourceAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-					myCurrentLayer.myName,
-					mySourceLayerList,
-					selectedMessage,
-					"Source Layer"
-				);
-				if(!sourceAnimation.myLayers.TryGetValue(mySourceLayerList.val, out sourceLayer))
-					return;
+				singleChoice=false;
+				mySingleChoice=null;
 			} else {
-				mySourceLayerList = CreateDropDown(
-					CastDict(sourceAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-					myCurrentLayer.myName,
-					mySourceLayerList,
-					selectedMessage,
-					"Source Layer",
-					objectType:"layer",
-					singleChoice:true,
-					mySingleChoice:selectedMessage.myTargetState.myLayer as AnimationObject
-				);
-				if(!sourceAnimation.myLayers.TryGetValue(mySourceLayerList.val, out sourceLayer))
-					return;
+				singleChoice=true;
+				mySingleChoice=selectedMessage.myTargetState.myLayer as AnimationObject as AnimationObject;
 			}
+			mySourceLayerList = CreateDropDown(
+				CastDict(sourceAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				mySourceLayerList,
+				selectedMessage,
+				"Source Layer",
+				singleChoice:singleChoice,
+				mySingleChoice:mySingleChoice
+			);
+			if(!sourceAnimation.myLayers.TryGetValue(mySourceLayerList.val, out sourceLayer))
+				return;
 
 			Layer targetLayer;
 			List<string> availableLayers = new List<string>();
-			if (selectedMessage.myTargetState == null) {
-				if(targetAnimation != sourceAnimation) {
-					myTargetLayerList = CreateDropDown(
-						CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-						myCurrentLayer.myName,
-						myTargetLayerList,
-						selectedMessage,
-						"Target Layer"
-					);
-				} else {
-					myTargetLayerList = CreateDropDown(
-						CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-						myCurrentLayer.myName,
-						myTargetLayerList,
-						selectedMessage,
-						"Target Layer",
-						singleChoice:true,
-						mySingleChoice:sourceLayer as AnimationObject
-					);
-				}
+			if ((selectedMessage.myTargetState == null) & (targetAnimation != sourceAnimation)) {
+				singleChoice=false;
+				mySingleChoice=null;
+			} else if (selectedMessage.myTargetState == null) {
+				singleChoice=true;
+				mySingleChoice=sourceLayer as AnimationObject;
 			} else {
-				myTargetLayerList = CreateDropDown(
-					CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
-					myCurrentLayer.myName,
-					myTargetLayerList,
-					selectedMessage,
-					"Target Layer",
-					singleChoice:true,
-					mySingleChoice:selectedMessage.myTargetState.myLayer as AnimationObject
-				);
+				singleChoice=true;
+				mySingleChoice=selectedMessage.myTargetState.myLayer as AnimationObject;
 			}
+			myTargetLayerList = CreateDropDown(
+				CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				myTargetLayerList,
+				selectedMessage,
+				"Target Layer",
+				singleChoice:singleChoice,
+				mySingleChoice:mySingleChoice
+			);
 			if(!targetAnimation.myLayers.TryGetValue(myTargetLayerList.val, out targetLayer))
 				return;
 
@@ -1812,25 +1740,12 @@ namespace HaremLife
 			}
 			availableSourceStates.Sort();
 
-			string selectedSourceState;
-			if (availableSourceStates.Count == 0)
-				selectedSourceState = "";
-			else if (mySourceStateList == null || !availableSourceStates.Contains(mySourceStateList.val))
-				selectedSourceState = availableSourceStates[0];
-			else
-				selectedSourceState = mySourceStateList.val;
-
-			mySourceStateList = new JSONStorableStringChooser("Source State", availableSourceStates, selectedSourceState, "Source State");
-			mySourceStateList.setCallbackFunction += (string v) => UIRefreshMenu();
-
-			// for some reason this bugs out. will fix later.
-			// mySourceStateList = PopulateJSONChooserSelection(
-				// availableSourceStates,
-				// availableSourceStates[0],
-				// mySourceStateList,
-				// selectedMessage,
-				// "Source State"
-			// );
+			mySourceStateList = PopulateJSONChooserSelection(
+				availableSourceStates,
+				mySourceStateList,
+				selectedMessage,
+				"Source State"
+			);
 
 			List<string> availableTargetStates = new List<string>();
 			foreach (var s in targetLayer.myStates)
@@ -1848,25 +1763,12 @@ namespace HaremLife
 			}
 			availableTargetStates.Sort();
 
-			string selectedTargetState;
-			if (availableTargetStates.Count == 0)
-				selectedTargetState = "";
-			else if (myTargetStateList == null || !availableTargetStates.Contains(myTargetStateList.val))
-				selectedTargetState = availableTargetStates[0];
-			else
-				selectedTargetState = myTargetStateList.val;
-
-			myTargetStateList = new JSONStorableStringChooser("Target State", availableTargetStates, selectedTargetState, "Target State");
-			myTargetStateList.setCallbackFunction += (string v) => UIRefreshMenu();
-
-			// for some reason this bugs out. will fix later.
-			// myTargetStateList = PopulateJSONChooserSelection(
-				// availableTargetStates,
-				// availableTargetStates[0],
-				// myTargetStateList,
-				// selectedMessage,
-				// "Target State"
-			// );
+			myTargetStateList = PopulateJSONChooserSelection(
+				availableTargetStates,
+				myTargetStateList,
+				selectedMessage,
+				"Target State"
+			);
 
 			if (mySourceAnimationList.choices.Count > 0)
 			{
@@ -1936,27 +1838,12 @@ namespace HaremLife
 		private void CreateOptionsMenu()
 		{
 			CreateMenuInfoOneLine("<size=30><b>General Options</b></size>", false);
-			// CreateMenuToggle(myOptionsDefaultToWorldAnchor, false);
 
 			CreateMenuSlider(myGlobalDefaultTransitionDuration, false);
 			CreateMenuSlider(myGlobalDefaultEaseInDuration, false);
 			CreateMenuSlider(myGlobalDefaultEaseOutDuration, false);
 			CreateMenuSlider(myGlobalDefaultWaitDurationMin, false);
 			CreateMenuSlider(myGlobalDefaultWaitDurationMax, false);
-
-			// CreateMenuInfoOneLine("<size=30><b>Debug Options</b></size>", false);
-			// CreateMenuInfoOneLine("<color=#ff0000><b>Can cause performance issues!</b></color>", false);
-
-			// CreateMenuToggle(myDebugShowInfo, false);
-			// if (myDebugShowInfo.val)
-				// CreateMenuInfo(myPlayInfo, 300, false);
-
-			// CreateMenuToggle(myDebugShowPaths, false);
-			// CreateMenuToggle(myDebugShowTransitions, false);
-			// CreateMenuToggle(myDebugShowSelectedOnly, false);
-
-			// if (myDebugShowPaths.val)
-			// 	CreateMenuButton("Log Path Stats", DebugLogStats, false);
 		}
 
 		// =======================================================================================
@@ -1980,17 +1867,14 @@ namespace HaremLife
 			if (myCurrentState != null)
 			{
 				myMainState.valNoCallback = myCurrentState.myName;
-				// myMainState.setCallbackFunction(myCurrentState.myName);
 			}
 			if (myCurrentLayer != null)
 			{
 				myMainLayer.valNoCallback = myCurrentLayer.myName;
-				// myMainLayer.setCallbackFunction(myCurrentLayer.myName);
 			}
 			if (myCurrentAnimation != null)
 			{
 				myMainAnimation.valNoCallback = myCurrentAnimation.myName;
-				// myMainAnimation.setCallbackFunction(myCurrentAnimation.myName);
 			}
 			UIRefreshMenu();
 		}
@@ -2004,13 +1888,11 @@ namespace HaremLife
 				myCurrentAnimation.myLayers[layer.myName] = layer;
 				layer.myAnimation = myCurrentAnimation;
 				LoadTransitions(layer, layerObj);
-				// LoadMessages(layer, layerObj);
 			}
 
 			if (myCurrentState != null)
 			{
 				myMainState.valNoCallback = myCurrentState.myName;
-				// myMainState.setCallbackFunction(myCurrentState.myName);
 			}
 			UIRefreshMenu();
 		}
