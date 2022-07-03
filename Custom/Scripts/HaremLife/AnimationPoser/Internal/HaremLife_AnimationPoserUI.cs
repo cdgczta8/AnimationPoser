@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using MVR.FileManagementSecure;
 using SimpleJSON;
 
@@ -1544,35 +1545,75 @@ namespace HaremLife
 			UIRefreshMenu();
 		}
 		
-		private JSONStorableStringChooser CreateDropDown(
+		private List<string> GetAvailableOptions(
 			Dictionary<string, AnimationObject> myAnimationObjects,
-			AnimationObject myCurrentAnimationObject,
-			JSONStorableStringChooser myAnimationObjectList
+			Message selectedMessage,
+			bool singleChoice = false,
+			AnimationObject mySingleChoice = null,
+			string objectType = "",
+			bool isDebug = false
 		) {
-
 			List<string> availableAnimationObjects = new List<string>();
-			foreach (var a in myAnimationObjects)
-			{
-				AnimationObject source = a.Value;
-				availableAnimationObjects.Add(source.myName);
+			if (singleChoice) {
+				availableAnimationObjects.Add(mySingleChoice.myName);
+			} else {
+				if (isDebug)
+					SuperController.LogError("in the else");
+				foreach (var a in myAnimationObjects)
+				{
+					AnimationObject source = a.Value;
+					availableAnimationObjects.Add(source.myName);
+				}
 			}
 			availableAnimationObjects.Sort();
 
+			return availableAnimationObjects;
+		}
+
+		private JSONStorableStringChooser PopulateJSONChooserSelection(
+			List<string> availableAnimationObjects,
+			string myCurrentAnimationObjectName,
+			JSONStorableStringChooser myAnimationObjectList,
+			Message selectedMessage,
+			string strLabel,
+			bool singleChoice = false
+		) {
 			string selectedAnimationObject;
-			if (availableAnimationObjects.Count == 0)
+			if(singleChoice & (selectedMessage.myTargetState != null))
+				selectedAnimationObject = availableAnimationObjects[0];
+			else if (availableAnimationObjects.Count == 0)
 				selectedAnimationObject= "";
 			else if (myAnimationObjectList == null || !availableAnimationObjects.Contains(myAnimationObjectList.val))
-				selectedAnimationObject = myCurrentAnimationObject.myName;
+				selectedAnimationObject = myCurrentAnimationObjectName;
 			else
 				selectedAnimationObject = myAnimationObjectList.val;
 
-			myAnimationObjectList = new JSONStorableStringChooser("Source Animation", availableAnimationObjects, selectedAnimationObject, "Source Animation");
+			myAnimationObjectList = new JSONStorableStringChooser(strLabel, availableAnimationObjects, selectedAnimationObject, strLabel);
 			myAnimationObjectList.setCallbackFunction += (string v) => UIRefreshMenu();
 
-			// AnimationObject sourceAnimationObject;
-			// if(!myAnimationObjects.TryGetValue(myAnimationObjectList.val, out sourceAnimationObject)){
-				// return;
-			// };
+			return myAnimationObjectList;
+		}
+		
+		private JSONStorableStringChooser CreateDropDown(
+			Dictionary<string, AnimationObject> myAnimationObjects,
+			string myCurrentAnimationObjectName,
+			JSONStorableStringChooser myAnimationObjectList,
+			Message selectedMessage,
+			string strLabel,
+			bool singleChoice = false,
+			AnimationObject mySingleChoice = null,
+			string objectType = "",
+			bool isDebug = false
+		) {
+
+			List<string> availableAnimationObjects = GetAvailableOptions(myAnimationObjects, selectedMessage, singleChoice, mySingleChoice, objectType, isDebug);
+			if (isDebug)
+				foreach (var available in availableAnimationObjects)
+					SuperController.LogError("Available " + objectType + ": " + available);
+			myAnimationObjectList = PopulateJSONChooserSelection(availableAnimationObjects, myCurrentAnimationObjectName, myAnimationObjectList, selectedMessage, strLabel, singleChoice);
+			if (isDebug)
+				SuperController.LogError("made it");
+
 			return myAnimationObjectList;
 		}
 
@@ -1632,118 +1673,107 @@ namespace HaremLife
 			CreateMenuTextInput("Name", messageName, false);
 			CreateMenuTextInput("String", messageString, false);
 
-			List<string> availableSourceAnimations = new List<string>();
-			foreach (var a in myAnimations)
-			{
-				Animation source = a.Value;
-				availableSourceAnimations.Add(source.myName);
-			}
-			availableSourceAnimations.Sort();
-
-			string selectedSourceAnimation;
-			if (availableSourceAnimations.Count == 0)
-				selectedSourceAnimation= "";
-			else if (mySourceAnimationList == null || !availableSourceAnimations.Contains(mySourceAnimationList.val))
-				selectedSourceAnimation = myCurrentAnimation.myName;
-			else
-				selectedSourceAnimation = mySourceAnimationList.val;
-
-			mySourceAnimationList = new JSONStorableStringChooser("Source Animation", availableSourceAnimations, selectedSourceAnimation, "Source Animation");
-			mySourceAnimationList.setCallbackFunction += (string v) => UIRefreshMenu();
-
+			mySourceAnimationList = CreateDropDown(
+				CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+				myCurrentAnimation.myName,
+				mySourceAnimationList,
+				selectedMessage,
+				"Source Animation"
+			);
 			Animation sourceAnimation;
 			if(!myAnimations.TryGetValue(mySourceAnimationList.val, out sourceAnimation)){
 				return;
 			};
 
-			List<string> availableAnimations = new List<string>();
-			if(selectedMessage.myTargetState != null) {
-				availableAnimations.Add(selectedMessage.myTargetState.myAnimation().myName);
+			Animation targetAnimation;
+			if (selectedMessage.myTargetState == null) {
+				myTargetAnimationList = CreateDropDown(
+					CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					myCurrentAnimation.myName,
+					myTargetAnimationList,
+					selectedMessage,
+					"Target Animation",
+					singleChoice:false
+				);
+				if(!myAnimations.TryGetValue(myTargetAnimationList.val, out targetAnimation)){
+					return;
+				};
 			} else {
-				foreach (var a in myAnimations)
-				{
-					Animation target = a.Value;
-					availableAnimations.Add(target.myName);
-				}
-				availableAnimations.Sort();
+				myTargetAnimationList = CreateDropDown(
+					CastDict(myAnimations).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					myCurrentAnimation.myName,
+					myTargetAnimationList,
+					selectedMessage,
+					"Target Animation",
+					singleChoice:true,
+					mySingleChoice:selectedMessage.myTargetState.myAnimation() as AnimationObject
+				);
+				if(!myAnimations.TryGetValue(myTargetAnimationList.val, out targetAnimation)){
+					return;
+				};
 			}
 
-			string selectedTargetAnimation;
-			if(selectedMessage.myTargetState != null)
-				selectedTargetAnimation = selectedMessage.myTargetState.myAnimation().myName;
-			else if (availableAnimations.Count == 0)
-				selectedTargetAnimation= "";
-			else if (myTargetAnimationList == null || !availableAnimations.Contains(myTargetAnimationList.val))
-				selectedTargetAnimation = myCurrentAnimation.myName;
-			else
-				selectedTargetAnimation = myTargetAnimationList.val;
-
-			myTargetAnimationList = new JSONStorableStringChooser("Target Animation", availableAnimations, selectedTargetAnimation, "Target Animation");
-			myTargetAnimationList.setCallbackFunction += (string v) => UIRefreshMenu();
-
-			Animation targetAnimation;
-			if(!myAnimations.TryGetValue(myTargetAnimationList.val, out targetAnimation)){
-				return;
-			};
-
 			Layer sourceLayer;
-			List<string> availableSourceLayers = new List<string>();
-			if (selectedMessage.myTargetState == null || sourceAnimation != selectedMessage.myTargetState.myLayer.myAnimation){
-				foreach (var l in sourceAnimation.myLayers)
-				{
-					Layer source = l.Value;
-					availableSourceLayers.Add(source.myName);
-				}
-				availableSourceLayers.Sort();
-
-				string selectedSourceLayer;
-				if (availableSourceLayers.Count == 0)
-					selectedSourceLayer = "";
-				else if (mySourceLayerList == null || !availableSourceLayers.Contains(mySourceLayerList.val))
-					selectedSourceLayer = myCurrentLayer.myName;
-				else
-					selectedSourceLayer = mySourceLayerList.val;
-
-				mySourceLayerList = new JSONStorableStringChooser("Source Layer", availableSourceLayers, selectedSourceLayer, "Source Layer");
-				mySourceLayerList.setCallbackFunction += (string v) => UIRefreshMenu();
-
+			if (selectedMessage.myTargetState == null || sourceAnimation != selectedMessage.myTargetState.myLayer.myAnimation) {
+				mySourceLayerList = CreateDropDown(
+					CastDict(sourceAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					myCurrentLayer.myName,
+					mySourceLayerList,
+					selectedMessage,
+					"Source Layer"
+				);
 				if(!sourceAnimation.myLayers.TryGetValue(mySourceLayerList.val, out sourceLayer))
 					return;
 			} else {
-				sourceLayer = selectedMessage.myTargetState.myLayer;
+				mySourceLayerList = CreateDropDown(
+					CastDict(sourceAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					myCurrentLayer.myName,
+					mySourceLayerList,
+					selectedMessage,
+					"Source Layer",
+					objectType:"layer",
+					singleChoice:true,
+					mySingleChoice:selectedMessage.myTargetState.myLayer as AnimationObject
+				);
+				if(!sourceAnimation.myLayers.TryGetValue(mySourceLayerList.val, out sourceLayer))
+					return;
 			}
 
 			Layer targetLayer;
 			List<string> availableLayers = new List<string>();
-			if(targetAnimation != sourceAnimation) {
-				if(selectedMessage.myTargetState != null) {
-					availableLayers.Add(selectedMessage.myTargetState.myLayer.myName);
+			if (selectedMessage.myTargetState == null) {
+				if(targetAnimation != sourceAnimation) {
+					myTargetLayerList = CreateDropDown(
+						CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+						myCurrentLayer.myName,
+						myTargetLayerList,
+						selectedMessage,
+						"Target Layer"
+					);
 				} else {
-					foreach (var l in targetAnimation.myLayers)
-					{
-						Layer target = l.Value;
-						availableLayers.Add(target.myName);
-					}
-					availableLayers.Sort();
+					myTargetLayerList = CreateDropDown(
+						CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+						myCurrentLayer.myName,
+						myTargetLayerList,
+						selectedMessage,
+						"Target Layer",
+						singleChoice:true,
+						mySingleChoice:sourceLayer as AnimationObject
+					);
 				}
-
-				string selectedTargetLayer;
-				if(selectedMessage.myTargetState != null)
-					selectedTargetLayer = selectedMessage.myTargetState.myLayer.myName;
-				else if (availableLayers.Count == 0)
-					selectedTargetLayer = "";
-				else if (myTargetLayerList == null || !availableLayers.Contains(myTargetLayerList.val))
-					selectedTargetLayer = myCurrentLayer.myName;
-				else
-					selectedTargetLayer = myTargetLayerList.val;
-
-				myTargetLayerList = new JSONStorableStringChooser("Target Layer", availableLayers, selectedTargetLayer, "Target Layer");
-				myTargetLayerList.setCallbackFunction += (string v) => UIRefreshMenu();
-
-				if(!targetAnimation.myLayers.TryGetValue(myTargetLayerList.val, out targetLayer))
-					return;
-			} else
-				targetLayer = sourceLayer;
+			} else {
+				myTargetLayerList = CreateDropDown(
+					CastDict(targetAnimation.myLayers).ToDictionary(entry => (string)entry.Key, entry => (AnimationObject)entry.Value),
+					myCurrentLayer.myName,
+					myTargetLayerList,
+					selectedMessage,
+					"Target Layer",
+					singleChoice:true,
+					mySingleChoice:selectedMessage.myTargetState.myLayer as AnimationObject
+				);
+			}
+			if(!targetAnimation.myLayers.TryGetValue(myTargetLayerList.val, out targetLayer))
+				return;
 
 			List<string> availableSourceStates = new List<string>();
 			foreach (var s in sourceLayer.myStates)
@@ -1793,14 +1823,25 @@ namespace HaremLife
 			mySourceStateList = new JSONStorableStringChooser("Source State", availableSourceStates, selectedSourceState, "Source State");
 			mySourceStateList.setCallbackFunction += (string v) => UIRefreshMenu();
 
+			// for some reason this bugs out. will fix later.
+			// mySourceStateList = PopulateJSONChooserSelection(
+				// availableSourceStates,
+				// availableSourceStates[0],
+				// mySourceStateList,
+				// selectedMessage,
+				// "Source State"
+			// );
+
 			List<string> availableTargetStates = new List<string>();
 			foreach (var s in targetLayer.myStates)
 			{
 				State target = s.Value;
 				if (selectedMessage != null) {
 					string qualStateName = $"{target.myLayer.myAnimation.myName}.{target.myLayer.myName}.{target.myName}";
-					if (selectedMessage.mySourceStates.Keys.ToList().Contains(qualStateName))
+					if (selectedMessage.mySourceStates.Keys.ToList().Contains(qualStateName)) {
+						SuperController.LogError("Cannot add state to availableTargetStates: " + qualStateName);
 						continue;
+					}
 				}
 
 				availableTargetStates.Add(target.myName);
@@ -1818,11 +1859,20 @@ namespace HaremLife
 			myTargetStateList = new JSONStorableStringChooser("Target State", availableTargetStates, selectedTargetState, "Target State");
 			myTargetStateList.setCallbackFunction += (string v) => UIRefreshMenu();
 
-			if (availableSourceAnimations.Count > 0)
+			// for some reason this bugs out. will fix later.
+			// myTargetStateList = PopulateJSONChooserSelection(
+				// availableTargetStates,
+				// availableTargetStates[0],
+				// myTargetStateList,
+				// selectedMessage,
+				// "Target State"
+			// );
+
+			if (mySourceAnimationList.choices.Count > 0)
 			{
 				CreateMenuPopup(mySourceAnimationList, false);
 			}
-			if (availableSourceLayers.Count > 0)
+			if (mySourceLayerList.choices.Count > 0)
 			{
 				CreateMenuPopup(mySourceLayerList, false);
 			}
@@ -1848,10 +1898,10 @@ namespace HaremLife
 					}, false
 				);
 			}
-			if(availableAnimations.Count > 0) {
+			if((myTargetAnimationList.choices.Count > 0) & (selectedMessage.myTargetState == null)) {
 				CreateMenuPopup(myTargetAnimationList, true);
 			}
-			if(availableLayers.Count > 0) {
+			if((myTargetLayerList.choices.Count > 0) & (selectedMessage.myTargetState == null)) {
 				CreateMenuPopup(myTargetLayerList, true);
 			}
 			if (availableTargetStates.Count > 0)
