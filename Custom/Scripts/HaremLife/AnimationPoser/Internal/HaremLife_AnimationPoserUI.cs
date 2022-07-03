@@ -1225,6 +1225,9 @@ namespace HaremLife
 
 				if (transitions.Count > 0)
 					CreateMenuSpacer(15, false);
+				CreateMenuInfoOneLine("<size=30><b>Entire Layer Transitions</b></size>", false);
+				CreateMenuButton("Add Sequential Transitions", UIAddSequentialTransitions, false);
+				CreateMenuButton("Add All Transitions", UIAddAllTransitions, false);
 			}
 			else if (transitions.Count == 0)
 			{
@@ -2437,6 +2440,50 @@ namespace HaremLife
 				source.myTransitions.Add(transition);
 			}
 
+			UIRefreshMenu();
+		}
+
+		private void UIAddSequentialTransitions()
+		{
+			if (myCurrentLayer == null || myCurrentLayer.myStates.Count == 0)
+				return;
+			List<string> myStates = myCurrentLayer.myStates.Keys.ToList();
+			myStates.Sort();
+
+			for (int i=0; i < (myStates.Count - 1); i++) {
+				State source = myCurrentLayer.myStates[myStates[i]];
+				State target = myCurrentLayer.myStates[myStates[i+1]];
+
+				if (!source.isReachable(target)) {
+					Transition transition = new Transition(source, target);
+					source.myTransitions.Add(transition);
+				}
+			}
+			UIRefreshMenu();
+		}
+
+		private void UIAddAllTransitions()
+		{
+			if (myCurrentLayer == null || myCurrentLayer.myStates.Count == 0)
+				return;
+			List<string> myStates = myCurrentLayer.myStates.Keys.ToList();
+			myStates.Sort();
+
+			for (int i=1; i < myStates.Count; i++) {
+				for (int j=0; j < i; j++) {
+					State source = myCurrentLayer.myStates[myStates[i]];
+					State target = myCurrentLayer.myStates[myStates[j]];
+
+					if (!source.isReachable(target)) {
+						Transition transition = new Transition(source, target);
+						source.myTransitions.Add(transition);
+					}
+					if (!target.isReachable(source)) {
+						Transition transition = new Transition(target, source);
+						target.myTransitions.Add(transition);
+					}
+				}
+			}
 			UIRefreshMenu();
 		}
 
